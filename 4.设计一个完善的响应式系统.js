@@ -54,19 +54,6 @@ function effectFactory(effectFn) {
 }
 
 effectFactory(() => {
-  console.log("1. 外部副作用函数");
-
-  effectFactory(() => {
-    console.log("2. 内部副作用函数");
-
-    document.querySelector("#age").innerHTML = proxyData.showAge
-      ? proxyData.age
-      : "不显示年龄";
-  });
-
-  document.querySelector("#text").innerHTML = proxyData.name;
+  // TODO 同时读取和设置data-导致死循环
+  document.querySelector("#age").innerHTML = ++proxyData.age;
 });
-
-setTimeout(() => {
-  proxyData.name = "帅气的冉娃娃";
-}, 1000);
