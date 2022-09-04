@@ -2,7 +2,7 @@
  * @Description:
  * 1. 代理拦截data的get属性 -> 将key和副作用函数关联起来
  * 2. 代理拦截data的set属性 -> 给data赋值时,自动执行[对应key]的副作用函数
- * 3. 创建工厂函数 -> 利用全局变量自定义每个key的副作用函数
+ * 3. 创建工厂函数 -> 利用全局变量自定义每个key的副作用函数,执行副作用函数前,先断开它与其他key的关联
  * 4. 手动执行副作用函数 -> 执行get拦截器,根据data的值修改网页
  * 5. 修改data的值 -> 执行set拦截器
  * @Date: 2022-09-04 14:38:11
@@ -17,6 +17,7 @@ const bucket = {};
 const proxyData = new Proxy(data, {
   get(target, key) {
     bucket[key] = activeEffect;
+    activeEffect.deps.push(key);
 
     return target[key];
   },
@@ -35,10 +36,17 @@ function effectFactory(effectFn) {
   const wrappedEffectFn = ({ key } = {}) => {
     console.log("执行副作用函数,修改网页上的值", key);
 
+    wrappedEffectFn.deps.map((dep) => {
+      delete bucket[dep];
+    });
+
+    wrappedEffectFn.deps = [];
     activeEffect = wrappedEffectFn;
 
     effectFn();
   };
+
+  wrappedEffectFn.deps = [];
 
   wrappedEffectFn();
 }
