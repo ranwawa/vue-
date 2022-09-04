@@ -52,21 +52,20 @@ function effectFactory(effectFn) {
 }
 
 effectFactory(() => {
+  console.log("1. 外部副作用函数");
+
+  effectFactory(() => {
+    console.log("2. 内部副作用函数");
+
+    document.querySelector("#age").innerHTML = proxyData.showAge
+      ? proxyData.age
+      : "不显示年龄";
+  });
+
   document.querySelector("#text").innerHTML = proxyData.name;
 });
 
-effectFactory(() => {
-  document.querySelector("#age").innerHTML = proxyData.showAge
-    ? proxyData.age
-    : "不显示年龄";
-});
-
 setTimeout(() => {
+  // TODO 值更新了但是页面没有更新
   proxyData.name = "帅气的冉娃娃";
-  proxyData.showAge = false;
 }, 1000);
-
-setTimeout(() => {
-  // TODO showAge是false,不应该执行副作用函数
-  proxyData.age = 28;
-}, 2000);
