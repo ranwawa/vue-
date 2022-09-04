@@ -1,7 +1,7 @@
 /*
  * @Description:
  * 1. 代理拦截data的get属性 -> 将key和副作用函数关联起来
- * 2. 代理拦截data的set属性 -> 给data赋值时,自动执行[对应key]的副作用函数
+ * 2. 代理拦截data的set属性 -> 当用户给data重新赋值时(过滤掉副作用函数里的赋值操作),自动执行[对应key]的副作用函数
  * 3. 创建工厂函数 -> 利用副作用函数栈自定义每个key的副作用函数,执行副作用函数前,先断开它与其他key的关联,执行副作用函数后,弹出顶端的副作用函数
  * 4. 手动执行副作用函数 -> 执行get拦截器,根据data的值修改网页
  * 5. 修改data的值 -> 执行set拦截器
@@ -25,11 +25,16 @@ const proxyData = new Proxy(data, {
   set(target, key, newValue) {
     target[key] = newValue;
 
-    if (!bucket[key]) {
+    const currentEffect = bucket[key];
+
+    if (!currentEffect) {
       return true;
     }
 
-    bucket[key]({ key });
+    // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
+    if (currentEffect !== effectStack[effectStack.length - 1]) {
+      bucket[key]({ key });
+    }
   },
 });
 
@@ -54,6 +59,5 @@ function effectFactory(effectFn) {
 }
 
 effectFactory(() => {
-  // TODO 同时读取和设置data-导致死循环
   document.querySelector("#age").innerHTML = ++proxyData.age;
 });
