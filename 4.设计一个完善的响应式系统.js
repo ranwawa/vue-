@@ -59,5 +59,13 @@ function effectFactory(effectFn) {
 }
 
 effectFactory(() => {
-  document.querySelector("#age").innerHTML = ++proxyData.age;
+  // TODO: age上注册了2个副作用函数,但是修改age值时,前面注册的这个副作用函数未被执行
+  document.querySelector("#age").innerHTML = proxyData.age;
 });
+
+effectFactory(() => {
+  document.querySelector("#text").innerHTML =
+    proxyData.age > 17 ? "成年" : "未成年";
+});
+
+proxyData.age = 17;
