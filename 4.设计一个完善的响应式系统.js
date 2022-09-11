@@ -34,6 +34,12 @@ const flushJob = (job) => {
 const proxyData = new Proxy(data, {
   get(target, key) {
     const activeEffect = effectStack[effectStack.length - 1];
+    const targetValue = target[key];
+
+    if (!activeEffect) {
+      return targetValue;
+    }
+
     activeEffect.deps.push(key);
 
     // 解决: 同个属性绑定多个副作用,触发时只执行最后一个副作用函数的问题
@@ -45,12 +51,16 @@ const proxyData = new Proxy(data, {
 
     effectList.push(activeEffect);
 
-    return target[key];
+    return targetValue;
   },
   set(target, key, newValue) {
     target[key] = newValue;
 
     const currentEffectList = bucket[key];
+
+    if (!currentEffectList) {
+      return true;
+    }
 
     if (!currentEffectList.length === 0) {
       return true;
@@ -94,8 +104,10 @@ effectFactory(() => {
   document.querySelector("#age").innerHTML = proxyData.age;
 });
 
-proxyData.age = 17;
+const age = `age: ${proxyData.age}`;
+proxyData.age = 28;
 
-proxyData.age = 19;
-proxyData.age = 20;
-proxyData.age = 11;
+setTimeout(() => {
+  // TODO 设计一个计算属性,当proxyData.age发生变化时,age跟着发生变化
+  console.log(age);
+}, 0);
