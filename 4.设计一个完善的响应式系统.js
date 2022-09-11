@@ -72,9 +72,7 @@ effectFactory(() => {
   document.querySelector("#age").innerHTML = proxyData.age;
 });
 
-effectFactory(() => {
-  document.querySelector("#text").innerHTML =
-    proxyData.age > 17 ? "成年" : "未成年";
-});
-
 proxyData.age = 17;
+
+// TODO 多次修改同一个属性,导致同一个副作用函数被重复触发
+proxyData.age = 19;
