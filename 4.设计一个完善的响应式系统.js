@@ -112,10 +112,17 @@ effectFactory(() => {
 
 const computed = (getter) => {
   const effectFn = effectFactory(getter, { lazy: true });
+  let value = null;
+  let dirty = true;
 
   const obj = {
     get value() {
-      return effectFn();
+      // 解决: 脏数据,多次获取计算属性值导致副作用函数重复执行的问题
+      if (dirty) {
+        value = effectFn();
+        dirty = false;
+      }
+      return value;
     },
   };
 
@@ -126,7 +133,6 @@ const age = computed(() => `age: ${proxyData.age}`);
 proxyData.age = 28;
 
 console.log(age.value);
-// TODO 计算属性监听的值没有发生变化,但读取age时却还是执行了副作用函数
 console.log(age.value);
 console.log(age.value);
 console.log(age.value);
