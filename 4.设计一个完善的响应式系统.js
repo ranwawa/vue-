@@ -133,6 +133,8 @@ const age = computed(() => `age: ${proxyData.age}`);
 proxyData.age = 28;
 
 console.log(age.value);
-console.log(age.value);
-console.log(age.value);
+
+proxyData.age = 18;
+
+// TODO 第二次修改值后,计算属性没有更新
 console.log(age.value);
