@@ -17,24 +17,34 @@ const effectStack = [];
 const proxyData = new Proxy(data, {
   get(target, key) {
     const activeEffect = effectStack[effectStack.length - 1];
-    bucket[key] = activeEffect;
     activeEffect.deps.push(key);
+
+    // 解决: 同个属性绑定多个副作用,触发时只执行最后一个副作用函数的问题
+    let effectList = bucket[key] || [];
+
+    if (effectList.length === 0) {
+      bucket[key] = effectList;
+    }
+
+    effectList.push(activeEffect);
 
     return target[key];
   },
   set(target, key, newValue) {
     target[key] = newValue;
 
-    const currentEffect = bucket[key];
+    const currentEffectList = bucket[key];
 
-    if (!currentEffect) {
+    if (!currentEffectList.length === 0) {
       return true;
     }
 
-    // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
-    if (currentEffect !== effectStack[effectStack.length - 1]) {
-      bucket[key]({ key });
-    }
+    currentEffectList.forEach((currentEffect) => {
+      // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
+      if (currentEffect !== effectStack[effectStack.length - 1]) {
+        currentEffect({ key });
+      }
+    });
   },
 });
 
@@ -59,7 +69,6 @@ function effectFactory(effectFn) {
 }
 
 effectFactory(() => {
-  // TODO: age上注册了2个副作用函数,但是修改age值时,前面注册的这个副作用函数未被执行
   document.querySelector("#age").innerHTML = proxyData.age;
 });
 
