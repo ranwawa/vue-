@@ -80,7 +80,7 @@ const proxyData = new Proxy(data, {
   },
 });
 
-function effectFactory(effectFn) {
+function effectFactory(effectFn, options) {
   const wrappedEffectFn = ({ key } = {}) => {
     console.log("执行副作用函数,修改网页上的值", key);
 
@@ -91,23 +91,40 @@ function effectFactory(effectFn) {
     wrappedEffectFn.deps = [];
 
     effectStack.push(wrappedEffectFn);
-    effectFn();
+
+    const res = effectFn();
+
     effectStack.pop();
+
+    return res;
   };
 
   wrappedEffectFn.deps = [];
+  wrappedEffectFn.options = options;
 
-  wrappedEffectFn();
+  // 解决: 懒执行,在需要的时候才执行并获取执行结果从而实现计算属性
+  return options?.lazy ? wrappedEffectFn : wrappedEffectFn();
 }
 
 effectFactory(() => {
   document.querySelector("#age").innerHTML = proxyData.age;
 });
 
-const age = `age: ${proxyData.age}`;
+const computed = (getter) => {
+  const effectFn = effectFactory(getter, { lazy: true });
+
+  const obj = {
+    get value() {
+      return effectFn();
+    },
+  };
+
+  return obj;
+};
+
+const age = computed(() => `age: ${proxyData.age}`);
 proxyData.age = 28;
 
 setTimeout(() => {
-  // TODO 设计一个计算属性,当proxyData.age发生变化时,age跟着发生变化
-  console.log(age);
+  console.log(age.value);
 }, 0);
