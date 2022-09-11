@@ -125,6 +125,8 @@ const computed = (getter) => {
 const age = computed(() => `age: ${proxyData.age}`);
 proxyData.age = 28;
 
-setTimeout(() => {
-  console.log(age.value);
-}, 0);
+console.log(age.value);
+// TODO 计算属性监听的值没有发生变化,但读取age时却还是执行了副作用函数
+console.log(age.value);
+console.log(age.value);
+console.log(age.value);
