@@ -13,6 +13,23 @@ const data = { name: "冉娃娃", age: 18, showAge: true };
 
 const bucket = {};
 const effectStack = [];
+const waitToRunEffectList = new Set();
+let isFlushing = false;
+
+const flushJob = (job) => {
+  if (isFlushing) return;
+
+  isFlushing = true;
+  const promise = Promise.resolve();
+
+  return promise
+    .then(() => {
+      job();
+    })
+    .finally(() => {
+      isFlushing = false;
+    });
+};
 
 const proxyData = new Proxy(data, {
   get(target, key) {
@@ -42,9 +59,14 @@ const proxyData = new Proxy(data, {
     currentEffectList.forEach((currentEffect) => {
       // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
       if (currentEffect !== effectStack[effectStack.length - 1]) {
-        currentEffect({ key });
+        waitToRunEffectList.add(currentEffect);
       }
     });
+
+    // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
+    flushJob(() =>
+      waitToRunEffectList.forEach((waitToRunEffect) => waitToRunEffect({ key }))
+    );
   },
 });
 
@@ -74,5 +96,6 @@ effectFactory(() => {
 
 proxyData.age = 17;
 
-// TODO 多次修改同一个属性,导致同一个副作用函数被重复触发
 proxyData.age = 19;
+proxyData.age = 20;
+proxyData.age = 11;
