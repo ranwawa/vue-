@@ -16,6 +16,7 @@ const effectStack = [];
 const waitToRunEffectList = new Set();
 let isFlushing = false;
 
+// 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
 const flushJob = (job) => {
   if (isFlushing) return;
 
@@ -73,14 +74,19 @@ const proxyData = new Proxy(data, {
       }
     });
 
-    // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
-    flushJob(() =>
-      waitToRunEffectList.forEach((waitToRunEffect) => waitToRunEffect({ key }))
-    );
+    waitToRunEffectList.forEach((waitToRunEffect) => {
+      const { scheduler } = waitToRunEffect.options;
+
+      if (scheduler) {
+        scheduler(() => waitToRunEffect({ key }));
+      } else {
+        waitToRunEffect({ key });
+      }
+    });
   },
 });
 
-function effectFactory(effectFn, options) {
+function effectFactory(effectFn, options = {}) {
   const wrappedEffectFn = ({ key } = {}) => {
     console.log("执行副作用函数,修改网页上的值", key);
 
@@ -106,14 +112,16 @@ function effectFactory(effectFn, options) {
   return options?.lazy ? wrappedEffectFn : wrappedEffectFn();
 }
 
-effectFactory(() => {
-  document.querySelector("#age").innerHTML = proxyData.age;
-});
-
 const computed = (getter) => {
-  const effectFn = effectFactory(getter, { lazy: true });
   let value = null;
   let dirty = true;
+  const effectFn = effectFactory(getter, {
+    // 解决: 使用调度器,当副作用函数执行前先重设dirty,保证计算属性可以拿到最新值
+    scheduler() {
+      dirty = true;
+    },
+    lazy: true,
+  });
 
   const obj = {
     get value() {
@@ -129,12 +137,21 @@ const computed = (getter) => {
   return obj;
 };
 
+effectFactory(
+  () => {
+    document.querySelector("#age").innerHTML = proxyData.age;
+  },
+  {
+    scheduler: (fn) => {
+      flushJob(fn);
+    },
+  }
+);
+
 const age = computed(() => `age: ${proxyData.age}`);
 proxyData.age = 28;
 
 console.log(age.value);
 
 proxyData.age = 18;
-
-// TODO 第二次修改值后,计算属性没有更新
 console.log(age.value);
