@@ -13,7 +13,6 @@ const data = { name: "冉娃娃", age: 18, showAge: true };
 
 const bucket = {};
 const effectStack = [];
-const waitToRunEffectList = new Set();
 let isFlushing = false;
 
 // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
@@ -32,64 +31,63 @@ const flushJob = (job) => {
     });
 };
 
+const track = (target, key) => {
+  const activeEffect = effectStack[effectStack.length - 1];
+
+  if (!activeEffect) return;
+
+  activeEffect.deps.push(key);
+
+  // 解决: 同个属性绑定多个副作用,触发时只执行最后一个副作用函数的问题
+  if (!bucket[key]) {
+    bucket[key] = [];
+  }
+
+  bucket[key].push(activeEffect);
+};
+
+const trigger = (target, key, newValue) => {
+  const currentEffectList = bucket[key];
+
+  if (!currentEffectList?.length) {
+    return;
+  }
+
+  const waitToRunEffectList = new Set();
+  currentEffectList.forEach((currentEffect) => {
+    // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
+    if (currentEffect !== effectStack[effectStack.length - 1]) {
+      waitToRunEffectList.add(currentEffect);
+    }
+  });
+
+  waitToRunEffectList.forEach((waitToRunEffect) => {
+    const { scheduler } = waitToRunEffect.options;
+
+    if (scheduler) {
+      scheduler(() => waitToRunEffect({ key }));
+    } else {
+      waitToRunEffect({ key });
+    }
+  });
+};
+
 const proxyData = new Proxy(data, {
   get(target, key) {
-    const activeEffect = effectStack[effectStack.length - 1];
-    const targetValue = target[key];
+    track(target, key);
 
-    if (!activeEffect) {
-      return targetValue;
-    }
-
-    activeEffect.deps.push(key);
-
-    // 解决: 同个属性绑定多个副作用,触发时只执行最后一个副作用函数的问题
-    let effectList = bucket[key] || [];
-
-    if (effectList.length === 0) {
-      bucket[key] = effectList;
-    }
-
-    effectList.push(activeEffect);
-
-    return targetValue;
+    return target[key];
   },
   set(target, key, newValue) {
     target[key] = newValue;
 
-    const currentEffectList = bucket[key];
-
-    if (!currentEffectList) {
-      return true;
-    }
-
-    if (!currentEffectList.length === 0) {
-      return true;
-    }
-
-    currentEffectList.forEach((currentEffect) => {
-      // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
-      if (currentEffect !== effectStack[effectStack.length - 1]) {
-        waitToRunEffectList.add(currentEffect);
-      }
-    });
-
-    waitToRunEffectList.forEach((waitToRunEffect) => {
-      const { scheduler } = waitToRunEffect.options;
-
-      if (scheduler) {
-        scheduler(() => waitToRunEffect({ key }));
-      } else {
-        waitToRunEffect({ key });
-      }
-    });
+    trigger(target, key, newValue);
   },
 });
 
 function effectFactory(effectFn, options = {}) {
   const wrappedEffectFn = ({ key } = {}) => {
     console.log("执行副作用函数,修改网页上的值", key);
-
     wrappedEffectFn.deps.map((dep) => {
       delete bucket[dep];
     });
@@ -106,6 +104,7 @@ function effectFactory(effectFn, options = {}) {
   };
 
   wrappedEffectFn.deps = [];
+  wrappedEffectFn.effectFn = effectFn;
   wrappedEffectFn.options = options;
 
   // 解决: 懒执行,在需要的时候才执行并获取执行结果从而实现计算属性
@@ -118,7 +117,10 @@ const computed = (getter) => {
   const effectFn = effectFactory(getter, {
     // 解决: 使用调度器,当副作用函数执行前先重设dirty,保证计算属性可以拿到最新值
     scheduler() {
-      dirty = true;
+      if (!dirty) {
+        dirty = true;
+        trigger(obj, "value");
+      }
     },
     lazy: true,
   });
@@ -130,6 +132,7 @@ const computed = (getter) => {
         value = effectFn();
         dirty = false;
       }
+      track(obj, "value");
       return value;
     },
   };
@@ -140,5 +143,4 @@ const computed = (getter) => {
 const age = computed(() => `age: ${proxyData.age}`);
 effectFactory(() => console.log(age.value));
 
-// TODO 嵌套在副作用函数里的计算属性,当值发生变化后没有自动打印
 proxyData.age = 28;
