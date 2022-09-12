@@ -137,21 +137,8 @@ const computed = (getter) => {
   return obj;
 };
 
-effectFactory(
-  () => {
-    document.querySelector("#age").innerHTML = proxyData.age;
-  },
-  {
-    scheduler: (fn) => {
-      flushJob(fn);
-    },
-  }
-);
-
 const age = computed(() => `age: ${proxyData.age}`);
+effectFactory(() => console.log(age.value));
+
+// TODO 嵌套在副作用函数里的计算属性,当值发生变化后没有自动打印
 proxyData.age = 28;
-
-console.log(age.value);
-
-proxyData.age = 18;
-console.log(age.value);
