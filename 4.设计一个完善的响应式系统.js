@@ -161,3 +161,5 @@ const computed = (getter) => {
 
   return obj;
 };
+
+// TODO 如何设计一个watch函数
