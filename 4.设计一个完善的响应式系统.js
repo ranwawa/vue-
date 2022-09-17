@@ -177,14 +177,23 @@ const watch = (obj, cb, options = {}) => {
   let wrappedEffect;
   let newValue;
   let oldValue;
+  let cleanup;
+  const onInvalided = (cb) => {
+    cleanup = cb;
+  };
 
   // 解决: 可同时监听对象和getter函数
   let fn = typeof obj === "function" ? obj : () => traverse(obj);
 
   let job = () => {
+    // 解决: 使用过期函数,在后续执行副作用函数时,改变之前副作用中的值,从而避免竞态问题
+    if (cleanup) {
+      cleanup();
+    }
+
     // 解决: 使用懒执行获取新旧值
     newValue = wrappedEffect();
-    cb(newValue, oldValue);
+    cb(newValue, oldValue, onInvalided);
     oldValue = newValue;
   };
 
@@ -221,10 +230,18 @@ const fakeApi = () => {
 
 watch(
   () => proxyData.age,
-  async (newValue) => {
-    // TODO: 如何解决竞态问题,让界面上显示第二次修改的值?
+  async (newValue, oldValue, onInvalided) => {
+    let expired = false;
+
+    onInvalided(() => {
+      expired = true;
+    });
+
     const res = await fakeApi();
-    document.querySelector("#text").innerHTML = res + newValue;
+
+    if (!expired) {
+      document.querySelector("#text").innerHTML = res + newValue;
+    }
   }
 );
 
