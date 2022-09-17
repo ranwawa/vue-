@@ -181,7 +181,9 @@ const watch = (obj, cb) => {
 
 watch(
   () => proxyData.age,
-  () => console.log("-----")
+  // TODO: 如何立即执行并且打印新旧值
+  (newValue, oldValue) => console.log("-----", newValue, oldValue),
+  {
+    immediate: true,
+  }
 );
-
-proxyData.age = 22;
