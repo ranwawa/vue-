@@ -173,10 +173,12 @@ const traverse = (target, seen = new Set()) => {
 };
 
 const watch = (obj, cb) => {
-  effectFactory(() => traverse(obj), { scheduler: cb });
+  // 解决: 可同时监听对象和getter函数
+  let fn = typeof obj === "function" ? obj : () => traverse(obj);
+
+  effectFactory(fn, { scheduler: cb });
 };
 
-// TODO: 如何监听一个getter函数
 watch(
   () => proxyData.age,
   () => console.log("-----")
