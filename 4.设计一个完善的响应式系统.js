@@ -11,16 +11,16 @@
 
 const data = { name: "冉娃娃", age: 18, showAge: true };
 
-const bucket = {};
+const bucket = new Map();
 const effectStack = [];
 let isFlushing = false;
+const promise = Promise.resolve();
 
 // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
 const flushJob = (job) => {
   if (isFlushing) return;
 
   isFlushing = true;
-  const promise = Promise.resolve();
 
   return promise
     .then(() => {
@@ -36,25 +36,45 @@ const track = (target, key) => {
 
   if (!activeEffect) return;
 
-  activeEffect.deps.push(key);
+  let dependenciesMap = bucket.get(target);
 
-  // 解决: 同个属性绑定多个副作用,触发时只执行最后一个副作用函数的问题
-  if (!bucket[key]) {
-    bucket[key] = [];
+  // 解决: 每个对象作为惟一的键,防止多个对象有相同属性时,重复收集依赖冲突的问题
+  if (!dependenciesMap) {
+    dependenciesMap = new Map();
+    bucket.set(target, dependenciesMap);
   }
 
-  bucket[key].push(activeEffect);
+  let dependencies = dependenciesMap.get(key);
+
+  if (!dependencies) {
+    dependencies = new Set();
+    dependenciesMap.set(key, dependencies);
+  }
+
+  // 解决: 同个属性绑定多个副作用,触发时只执行最后一个副作用函数的问题
+  dependencies.add(activeEffect);
+
+  activeEffect.target = target;
+  activeEffect.key = key;
+  activeEffect.deps.push(dependencies);
 };
 
-const trigger = (target, key, newValue) => {
-  const currentEffectList = bucket[key];
+const trigger = (target, key) => {
+  const currentDependenciesMap = bucket.get(target);
 
-  if (!currentEffectList?.length) {
+  if (!currentDependenciesMap) {
+    return;
+  }
+
+  const currentDependencies = currentDependenciesMap.get(key);
+
+  if (!currentDependencies) {
     return;
   }
 
   const waitToRunEffectList = new Set();
-  currentEffectList.forEach((currentEffect) => {
+
+  currentDependencies.forEach((currentEffect) => {
     // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
     if (currentEffect !== effectStack[effectStack.length - 1]) {
       waitToRunEffectList.add(currentEffect);
@@ -65,9 +85,9 @@ const trigger = (target, key, newValue) => {
     const { scheduler } = waitToRunEffect.options;
 
     if (scheduler) {
-      scheduler(() => waitToRunEffect({ key }));
+      scheduler(waitToRunEffect);
     } else {
-      waitToRunEffect({ key });
+      waitToRunEffect();
     }
   });
 };
@@ -86,8 +106,9 @@ const proxyData = new Proxy(data, {
 });
 
 function effectFactory(effectFn, options = {}) {
-  const wrappedEffectFn = ({ key } = {}) => {
-    console.log("执行副作用函数,修改网页上的值", key);
+  const wrappedEffectFn = () => {
+    console.log("执行副作用函数,修改网页上的值", wrappedEffectFn.key);
+
     wrappedEffectFn.deps.map((dep) => {
       delete bucket[dep];
     });
@@ -132,6 +153,7 @@ const computed = (getter) => {
         value = effectFn();
         dirty = false;
       }
+      // 解决: 嵌套的计算属性,当原始值发生变化后不会执行计算属性
       track(obj, "value");
       return value;
     },
@@ -139,8 +161,3 @@ const computed = (getter) => {
 
   return obj;
 };
-
-const age = computed(() => `age: ${proxyData.age}`);
-effectFactory(() => console.log(age.value));
-
-proxyData.age = 28;
