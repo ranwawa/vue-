@@ -202,12 +202,31 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
+let times = 1;
+
+// 1秒后返回20, 2秒后返回10
+const fakeApi = () => {
+  const isFirst = times === 1;
+  times += 1;
+
+  return new Promise((resolve) => {
+    setTimeout(
+      () => {
+        resolve(isFirst ? "第一次请求,3秒后返回" : "第二次请求,1秒后返回");
+      },
+      isFirst ? 3000 : 1000
+    );
+  });
+};
+
 watch(
   () => proxyData.age,
-  (newValue, oldValue) => console.log("-----", newValue, oldValue),
-  {
-    immediate: true,
+  async (newValue) => {
+    // TODO: 如何解决竞态问题,让界面上显示第二次修改的值?
+    const res = await fakeApi();
+    document.querySelector("#text").innerHTML = res + newValue;
   }
 );
 
 proxyData.age = 33;
+proxyData.age = 34;
