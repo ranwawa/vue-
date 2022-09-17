@@ -172,18 +172,42 @@ const traverse = (target, seen = new Set()) => {
   seen.add(target);
 };
 
-const watch = (obj, cb) => {
+const watch = (obj, cb, options = {}) => {
+  const { immediate } = options;
+  let wrappedEffect;
+  let newValue;
+  let oldValue;
+
   // 解决: 可同时监听对象和getter函数
   let fn = typeof obj === "function" ? obj : () => traverse(obj);
 
-  effectFactory(fn, { scheduler: cb });
+  let job = () => {
+    // 解决: 使用懒执行获取新旧值
+    newValue = wrappedEffect();
+    cb(newValue, oldValue);
+    oldValue = newValue;
+  };
+
+  wrappedEffect = effectFactory(fn, {
+    scheduler: () => {
+      job();
+    },
+    lazy: true,
+  });
+
+  if (immediate) {
+    job();
+  } else {
+    wrappedEffect();
+  }
 };
 
 watch(
   () => proxyData.age,
-  // TODO: 如何立即执行并且打印新旧值
   (newValue, oldValue) => console.log("-----", newValue, oldValue),
   {
     immediate: true,
   }
 );
+
+proxyData.age = 33;
