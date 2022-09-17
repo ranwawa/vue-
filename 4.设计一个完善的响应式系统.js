@@ -162,4 +162,21 @@ const computed = (getter) => {
   return obj;
 };
 
-// TODO 如何设计一个watch函数
+const traverse = (target, seen = new Set()) => {
+  if (typeof target === "object" && target !== null && !seen.has(target)) {
+    Object.keys(target).forEach((key) => {
+      traverse(target[key], seen);
+    });
+  }
+
+  seen.add(target);
+};
+
+const watch = (obj, cb) => {
+  effectFactory(() => traverse(obj), { scheduler: cb });
+};
+
+watch(proxyData, () => console.log("-----"));
+
+proxyData.name = 22;
+proxyData.age = 22;
