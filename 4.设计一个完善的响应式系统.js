@@ -176,7 +176,10 @@ const watch = (obj, cb) => {
   effectFactory(() => traverse(obj), { scheduler: cb });
 };
 
-watch(proxyData, () => console.log("-----"));
+// TODO: 如何监听一个getter函数
+watch(
+  () => proxyData.age,
+  () => console.log("-----")
+);
 
-proxyData.name = 22;
 proxyData.age = 22;
