@@ -18,6 +18,7 @@ const data = {
   },
 };
 
+const ITER_KEY = Symbol("forin");
 const bucket = new Map();
 const effectStack = [];
 let isFlushing = false;
@@ -111,6 +112,7 @@ const proxyData = new Proxy(data, {
     trigger(target, key, newValue);
   },
   has(target, key) {
+    // 解决: 拦截in操作
     track(target, key);
 
     return Reflect.has(target, key);
@@ -119,9 +121,17 @@ const proxyData = new Proxy(data, {
     const isOwn = Object.prototype.hasOwnProperty.call(target, key);
     const isDeleted = Reflect.deleteProperty(target, key);
 
+    // 解决: 拦截delete操作
     if (isOwn && isDeleted) {
       trigger(target, key);
+      trigger(target, ITER_KEY);
     }
+  },
+  ownKeys(target) {
+    // 解决: 使用惟一key拦截for in 操作
+    track(target, ITER_KEY);
+
+    return Reflect.ownKeys(target);
   },
 });
 
@@ -243,5 +253,4 @@ effectFactory(() => {
   console.log(keys);
 });
 
-// TODO: 如何拦截for in
 delete proxyData.newAge;
