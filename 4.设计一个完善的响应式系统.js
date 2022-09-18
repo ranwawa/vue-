@@ -9,7 +9,14 @@
  * @Author: ranwawa <ranwawa@zmn.cn>
  */
 
-const data = { name: "冉娃娃", age: 18, showAge: true };
+const data = {
+  name: "冉娃娃",
+  age: 18,
+  showAge: true,
+  get newAge() {
+    return this.age + 100;
+  },
+};
 
 const bucket = new Map();
 const effectStack = [];
@@ -211,39 +218,7 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-let times = 1;
+effectFactory(() => console.log(proxyData.newAge));
 
-// 1秒后返回20, 2秒后返回10
-const fakeApi = () => {
-  const isFirst = times === 1;
-  times += 1;
-
-  return new Promise((resolve) => {
-    setTimeout(
-      () => {
-        resolve(isFirst ? "第一次请求,3秒后返回" : "第二次请求,1秒后返回");
-      },
-      isFirst ? 3000 : 1000
-    );
-  });
-};
-
-watch(
-  () => proxyData.age,
-  async (newValue, oldValue, onInvalided) => {
-    let expired = false;
-
-    onInvalided(() => {
-      expired = true;
-    });
-
-    const res = await fakeApi();
-
-    if (!expired) {
-      document.querySelector("#text").innerHTML = res + newValue;
-    }
-  }
-);
-
-proxyData.age = 33;
-proxyData.age = 34;
+// TODO: 如何监听响应式对象中getter里this关联的属性
+proxyData.age += 1;
