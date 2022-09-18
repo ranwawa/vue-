@@ -218,6 +218,7 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-effectFactory(() => console.log(proxyData.newAge));
+effectFactory(() => console.log("newAge" in proxyData ? "存在" : "不存在 "));
 
-proxyData.age += 1;
+// TODO: 如何拦截in和delete操作符
+delete proxyData.newAge;
