@@ -231,6 +231,17 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-effectFactory(() => console.log("newAge" in proxyData ? "存在" : "不存在 "));
+effectFactory(() => {
+  let keys = "";
 
+  for (const key in proxyData) {
+    if (Object.hasOwnProperty.call(proxyData, key)) {
+      keys += `${key},`;
+    }
+  }
+
+  console.log(keys);
+});
+
+// TODO: 如何拦截for in
 delete proxyData.newAge;
