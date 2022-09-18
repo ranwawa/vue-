@@ -110,6 +110,19 @@ const proxyData = new Proxy(data, {
 
     trigger(target, key, newValue);
   },
+  has(target, key) {
+    track(target, key);
+
+    return Reflect.has(target, key);
+  },
+  deleteProperty(target, key) {
+    const isOwn = Object.prototype.hasOwnProperty.call(target, key);
+    const isDeleted = Reflect.deleteProperty(target, key);
+
+    if (isOwn && isDeleted) {
+      trigger(target, key);
+    }
+  },
 });
 
 function effectFactory(effectFn, options = {}) {
@@ -220,5 +233,4 @@ const watch = (obj, cb, options = {}) => {
 
 effectFactory(() => console.log("newAge" in proxyData ? "存在" : "不存在 "));
 
-// TODO: 如何拦截in和delete操作符
 delete proxyData.newAge;
