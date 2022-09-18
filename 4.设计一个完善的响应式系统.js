@@ -100,13 +100,13 @@ const trigger = (target, key) => {
 };
 
 const proxyData = new Proxy(data, {
-  get(target, key) {
+  get(target, key, receiver) {
     track(target, key);
 
-    return target[key];
+    return Reflect.get(target, key, receiver);
   },
-  set(target, key, newValue) {
-    target[key] = newValue;
+  set(target, key, newValue, receiver) {
+    Reflect.set(target, key, newValue, receiver);
 
     trigger(target, key, newValue);
   },
@@ -220,5 +220,4 @@ const watch = (obj, cb, options = {}) => {
 
 effectFactory(() => console.log(proxyData.newAge));
 
-// TODO: 如何监听响应式对象中getter里this关联的属性
 proxyData.age += 1;
