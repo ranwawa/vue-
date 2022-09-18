@@ -253,4 +253,5 @@ effectFactory(() => {
   console.log(keys);
 });
 
-delete proxyData.newAge;
+// TODO: 添加属性时触发for in
+proxyData.company = "zmn";
