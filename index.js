@@ -20,18 +20,21 @@ const typeMap = {
   DEL: "DEL",
 };
 const reactiveMap = new Map();
-const includes = Array.prototype.includes;
-const arrayInstrumentation = {
-  includes(...args) {
-    const res = includes.apply(this, args);
+const arrayInstrumentation = {};
+
+["indexOf", "lastIndexOf", "includes"].forEach((methodName) => {
+  const protoMethod = Array.prototype[methodName];
+
+  arrayInstrumentation[methodName] = function (...args) {
+    const res = protoMethod.apply(this, args);
 
     if (res) {
       return res;
     }
 
-    return includes.apply(this.__raw, args);
-  },
-};
+    return protoMethod.apply(this.__raw, args);
+  };
+});
 
 // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
 const flushJob = (job) => {
