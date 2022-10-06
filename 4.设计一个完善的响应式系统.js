@@ -264,14 +264,11 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const obj = {};
-const proto = { age: 28 };
-const child = reactive(obj);
-const parent = reactive(proto);
-Object.setPrototypeOf(child, parent);
+const obj = reactive({ person: { name: "rww" } });
 
 effectFactory(() => {
-  console.log("age: ", child.age);
+  console.log("name: ", obj.person.name);
 });
 
-child.age = 18;
+// TODO: 没有触发副作用函数执行
+obj.person.name = "rww2";
