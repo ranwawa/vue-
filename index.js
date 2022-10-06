@@ -92,6 +92,16 @@ const trigger = (target, key, type) => {
       });
   }
 
+  // 解决: 通过下标新增数组元素时,触发length相关副作用函数
+  if (Array.isArray(target) && type === typeMap.ADD) {
+    const lengthEffectList = currentDependenciesMap.get("length");
+
+    lengthEffectList &&
+      lengthEffectList.forEach((interatorEffect) => {
+        waitToRunEffectList.add(interatorEffect);
+      });
+  }
+
   waitToRunEffectList.forEach((waitToRunEffect) => {
     const { scheduler } = waitToRunEffect.options;
 
@@ -134,7 +144,13 @@ const createReactive = (originData, isShallow, isReadOnly) => {
         return true;
       }
 
-      const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
+      let type;
+      if (Array.isArray(target)) {
+        type = key >= target.length ? typeMap.ADD : typeMap.SET;
+      } else {
+        type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
+      }
+
       const oldValue = target[key];
 
       Reflect.set(target, key, newValue, receiver);
@@ -308,5 +324,4 @@ effectFactory(() => {
   console.log(arr.length);
 });
 
-// TODO: 如何触发0的副作用函数
 arr[1] = "b";
