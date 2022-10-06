@@ -334,14 +334,13 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const arr = reactive(["a"]);
+const arr = reactive(["a", "b"]);
 
 effectFactory(() => {
-  for (const key in arr) {
-    if (Object.hasOwnProperty.call(arr, key)) {
-      console.log(key);
-    }
+  for (const iterator of arr) {
+    console.log(iterator);
   }
 });
 
-arr.length = 0;
+// TODO: 如何触发for of 循环
+arr.length = 10;
