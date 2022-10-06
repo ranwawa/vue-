@@ -112,7 +112,11 @@ const reactive = (originData) => {
 
       track(target, key);
 
-      return Reflect.get(target, key, receiver);
+      const value = Reflect.get(target, key, receiver);
+      // 解决: 深响应
+      const isObjectValue = typeof value === "object" && value !== null;
+
+      return isObjectValue ? reactive(value) : value;
     },
     set(target, key, newValue, receiver) {
       const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
@@ -270,5 +274,4 @@ effectFactory(() => {
   console.log("name: ", obj.person.name);
 });
 
-// TODO: 没有触发副作用函数执行
 obj.person.name = "rww2";
