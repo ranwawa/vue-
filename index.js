@@ -19,6 +19,7 @@ const typeMap = {
   ADD: "ADD",
   DEL: "DEL",
 };
+const reactiveMap = new Map();
 
 // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
 const flushJob = (job) => {
@@ -125,7 +126,14 @@ const trigger = (target, key, type, newValue) => {
 };
 
 const createReactive = (originData, isShallow, isReadOnly) => {
-  return new Proxy(originData, {
+  const currentReactive = reactiveMap.get(originData);
+
+  // 解决: arr.includes(arr[0])为false的情况
+  if (currentReactive) {
+    return currentReactive;
+  }
+
+  const reactivedData = new Proxy(originData, {
     get(target, key, receiver) {
       if (key === "__raw") {
         return target;
@@ -214,6 +222,10 @@ const createReactive = (originData, isShallow, isReadOnly) => {
       return Reflect.ownKeys(target);
     },
   });
+
+  reactiveMap.set(originData, reactivedData);
+
+  return reactivedData;
 };
 
 const reactive = (originData) => {
@@ -337,5 +349,4 @@ const watch = (obj, cb, options = {}) => {
 const obj = {};
 const arr = reactive([obj]);
 
-// TODO: 为什么会输出false
 console.log(arr.includes(arr[0]));
