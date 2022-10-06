@@ -366,7 +366,12 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const obj = {};
-const arr = reactive([obj]);
+const arr = reactive([]);
 
-console.log(arr.includes(obj));
+effectFactory(() => {
+  arr.push(1);
+});
+
+effectFactory(() => {
+  arr.push(2);
+});
