@@ -131,8 +131,8 @@ const createReactive = (originData, isShallow, isReadOnly) => {
         return target;
       }
 
-      // 解決: 只读属性不用收集依赖
-      if (!isReadOnly) {
+      // 解決: 只读属性不用收集依赖,数组for of触发副作用函数trigger时报错的问题
+      if (!isReadOnly && typeof key !== "symbol") {
         track(target, key);
       }
 
@@ -342,5 +342,4 @@ effectFactory(() => {
   }
 });
 
-// TODO: 如何触发for of 循环
 arr.length = 10;
