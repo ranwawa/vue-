@@ -20,6 +20,18 @@ const typeMap = {
   DEL: "DEL",
 };
 const reactiveMap = new Map();
+const includes = Array.prototype.includes;
+const arrayInstrumentation = {
+  includes(...args) {
+    const res = includes.apply(this, args);
+
+    if (res) {
+      return res;
+    }
+
+    return includes.apply(this.__raw, args);
+  },
+};
 
 // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
 const flushJob = (job) => {
@@ -142,6 +154,11 @@ const createReactive = (originData, isShallow, isReadOnly) => {
       // 解決: 只读属性不用收集依赖,数组for of触发副作用函数trigger时报错的问题
       if (!isReadOnly && typeof key !== "symbol") {
         track(target, key);
+      }
+
+      // 解决: 重写array上的方法,避免无法查找原始数据的问题
+      if (Array.isArray(target) && arrayInstrumentation.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentation, key, receiver);
       }
 
       const value = Reflect.get(target, key, receiver);
@@ -349,5 +366,4 @@ const watch = (obj, cb, options = {}) => {
 const obj = {};
 const arr = reactive([obj]);
 
-// TODO: 在响应式数组上无法查找原始数组元素
 console.log(arr.includes(obj));
