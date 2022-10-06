@@ -256,3 +256,16 @@ const watch = (obj, cb, options = {}) => {
     wrappedEffect();
   }
 };
+
+const obj = {};
+const proto = { age: 28 };
+const child = reactive(obj);
+const parent = reactive(proto);
+Object.setPrototypeOf(child, parent);
+
+effectFactory(() => {
+  console.log("age: ", child.age);
+});
+
+// TODO: 触发了2次副作用函数
+child.age = 18;
