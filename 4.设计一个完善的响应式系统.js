@@ -23,6 +23,11 @@ const bucket = new Map();
 const effectStack = [];
 let isFlushing = false;
 const promise = Promise.resolve();
+const typeMap = {
+  SET: "SET",
+  ADD: "ADD",
+  DEL: "DEL",
+};
 
 // 解决: 使用刷新队列和set去重,让所有副作用函数在下一个微任务循环中执行,避免执行多次同样的副作用函数
 const flushJob = (job) => {
@@ -67,7 +72,7 @@ const track = (target, key) => {
   activeEffect.deps.push(dependencies);
 };
 
-const trigger = (target, key) => {
+const trigger = (target, key, type) => {
   const currentDependenciesMap = bucket.get(target);
 
   if (!currentDependenciesMap) {
@@ -76,18 +81,25 @@ const trigger = (target, key) => {
 
   const currentDependencies = currentDependenciesMap.get(key);
 
-  if (!currentDependencies) {
-    return;
-  }
-
   const waitToRunEffectList = new Set();
 
-  currentDependencies.forEach((currentEffect) => {
-    // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
-    if (currentEffect !== effectStack[effectStack.length - 1]) {
-      waitToRunEffectList.add(currentEffect);
-    }
-  });
+  currentDependencies &&
+    currentDependencies.forEach((currentEffect) => {
+      // 解决: 注册副作用函数时,同时读取设置对象值导致的死循环
+      if (currentEffect !== effectStack[effectStack.length - 1]) {
+        waitToRunEffectList.add(currentEffect);
+      }
+    });
+
+  // 解决: 如果是新增/删除属性,则要触发for in相关副作用函数
+  if (type === typeMap.ADD || type === typeMap.DEL) {
+    const iteratorEffectList = currentDependenciesMap.get(ITER_KEY);
+
+    iteratorEffectList &&
+      iteratorEffectList.forEach((interatorEffect) => {
+        waitToRunEffectList.add(interatorEffect);
+      });
+  }
 
   waitToRunEffectList.forEach((waitToRunEffect) => {
     const { scheduler } = waitToRunEffect.options;
@@ -107,9 +119,11 @@ const proxyData = new Proxy(data, {
     return Reflect.get(target, key, receiver);
   },
   set(target, key, newValue, receiver) {
+    const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
+
     Reflect.set(target, key, newValue, receiver);
 
-    trigger(target, key, newValue);
+    trigger(target, key, type);
   },
   has(target, key) {
     // 解决: 拦截in操作
@@ -118,18 +132,20 @@ const proxyData = new Proxy(data, {
     return Reflect.has(target, key);
   },
   deleteProperty(target, key) {
-    const isOwn = Object.prototype.hasOwnProperty.call(target, key);
+    const isOwn = target.hasOwnProperty(key);
     const isDeleted = Reflect.deleteProperty(target, key);
 
     // 解决: 拦截delete操作
     if (isOwn && isDeleted) {
-      trigger(target, key);
-      trigger(target, ITER_KEY);
+      console.log("deleteProperty: 拦截删除属性操作");
+      trigger(target, key, typeMap.DEL);
     }
   },
   ownKeys(target) {
     // 解决: 使用惟一key拦截for in 操作
     track(target, ITER_KEY);
+
+    console.log("ownKeys: 攔截for in操作");
 
     return Reflect.ownKeys(target);
   },
@@ -253,5 +269,6 @@ effectFactory(() => {
   console.log(keys);
 });
 
-// TODO: 添加属性时触发for in
 proxyData.company = "zmn";
+
+delete proxyData.company;
