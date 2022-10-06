@@ -106,6 +106,10 @@ const trigger = (target, key, type) => {
 const reactive = (originData) => {
   return new Proxy(originData, {
     get(target, key, receiver) {
+      if (key === "__raw") {
+        return target;
+      }
+
       track(target, key);
 
       return Reflect.get(target, key, receiver);
@@ -116,11 +120,14 @@ const reactive = (originData) => {
 
       Reflect.set(target, key, newValue, receiver);
 
+      // 解决: 屏蔽原型链代理对象属性设置触发重复的副作用执行
+      const isCurrentObj = receiver.__raw === target;
       // 解决: 只有当值发生变化时才触发副作用函数
-      if (
+      const isChangedValue =
         oldValue !== newValue &&
-        !(Number.isNaN(oldValue) && Number.isNaN(newValue))
-      ) {
+        !(Number.isNaN(oldValue) && Number.isNaN(newValue));
+
+      if (isCurrentObj && isChangedValue) {
         trigger(target, key, type);
       }
     },
@@ -267,5 +274,4 @@ effectFactory(() => {
   console.log("age: ", child.age);
 });
 
-// TODO: 触发了2次副作用函数
 child.age = 18;
