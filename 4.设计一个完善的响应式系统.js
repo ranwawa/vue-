@@ -274,4 +274,5 @@ effectFactory(() => {
   console.log("name: ", obj.person.name);
 });
 
+// TODO: 改变name,但不触发副作用函数(浅响应)
 obj.person.name = "rww2";
