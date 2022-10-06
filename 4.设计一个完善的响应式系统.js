@@ -120,10 +120,17 @@ const proxyData = new Proxy(data, {
   },
   set(target, key, newValue, receiver) {
     const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
+    const oldValue = target[key];
 
     Reflect.set(target, key, newValue, receiver);
 
-    trigger(target, key, type);
+    // 解决: 只有当值发生变化时才触发副作用函数
+    if (
+      oldValue !== newValue &&
+      !(Number.isNaN(oldValue) && Number.isNaN(newValue))
+    ) {
+      trigger(target, key, type);
+    }
   },
   has(target, key) {
     // 解决: 拦截in操作
@@ -261,5 +268,4 @@ effectFactory(() => {
   console.log(proxyData.age);
 });
 
-// TODO: 年龄没有发生变化,却触发了副作用函数
 proxyData.age = 18;
