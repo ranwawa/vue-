@@ -258,17 +258,8 @@ const watch = (obj, cb, options = {}) => {
 };
 
 effectFactory(() => {
-  let keys = "";
-
-  for (const key in proxyData) {
-    if (Object.hasOwnProperty.call(proxyData, key)) {
-      keys += `${key},`;
-    }
-  }
-
-  console.log(keys);
+  console.log(proxyData.age);
 });
 
-proxyData.company = "zmn";
-
-delete proxyData.company;
+// TODO: 年龄没有发生变化,却触发了副作用函数
+proxyData.age = 18;
