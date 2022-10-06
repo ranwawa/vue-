@@ -103,7 +103,7 @@ const trigger = (target, key, type) => {
   });
 };
 
-const reactive = (originData) => {
+const createReactive = (originData, isShallow) => {
   return new Proxy(originData, {
     get(target, key, receiver) {
       if (key === "__raw") {
@@ -115,8 +115,10 @@ const reactive = (originData) => {
       const value = Reflect.get(target, key, receiver);
       // 解决: 深响应
       const isObjectValue = typeof value === "object" && value !== null;
+      // 解决: 浅响应
+      const shouldDeepReactive = isObjectValue && !isShallow;
 
-      return isObjectValue ? reactive(value) : value;
+      return shouldDeepReactive ? reactive(value) : value;
     },
     set(target, key, newValue, receiver) {
       const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
@@ -160,6 +162,14 @@ const reactive = (originData) => {
       return Reflect.ownKeys(target);
     },
   });
+};
+
+const reactive = (originData) => {
+  return createReactive(originData, false);
+};
+
+const shallowReactive = (originData) => {
+  return createReactive(originData, true);
 };
 
 function effectFactory(effectFn, options = {}) {
@@ -268,11 +278,10 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const obj = reactive({ person: { name: "rww" } });
+const obj = shallowReactive({ person: { name: "rww" } });
 
 effectFactory(() => {
   console.log("name: ", obj.person.name);
 });
 
-// TODO: 改变name,但不触发副作用函数(浅响应)
 obj.person.name = "rww2";
