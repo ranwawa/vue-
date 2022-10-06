@@ -349,4 +349,5 @@ const watch = (obj, cb, options = {}) => {
 const obj = {};
 const arr = reactive([obj]);
 
-console.log(arr.includes(arr[0]));
+// TODO: 在响应式数组上无法查找原始数组元素
+console.log(arr.includes(obj));
