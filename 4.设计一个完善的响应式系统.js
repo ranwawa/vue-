@@ -103,14 +103,17 @@ const trigger = (target, key, type) => {
   });
 };
 
-const createReactive = (originData, isShallow) => {
+const createReactive = (originData, isShallow, isReadOnly) => {
   return new Proxy(originData, {
     get(target, key, receiver) {
       if (key === "__raw") {
         return target;
       }
 
-      track(target, key);
+      // 解決: 只读属性不用收集依赖
+      if (!isReadOnly) {
+        track(target, key);
+      }
 
       const value = Reflect.get(target, key, receiver);
       // 解决: 深响应
@@ -118,9 +121,19 @@ const createReactive = (originData, isShallow) => {
       // 解决: 浅响应
       const shouldDeepReactive = isObjectValue && !isShallow;
 
-      return shouldDeepReactive ? reactive(value) : value;
+      if (shouldDeepReactive) {
+        // 解决: 深只读
+        return isReadOnly ? readOnlyReactive(value) : reactive(value);
+      }
+
+      return value;
     },
     set(target, key, newValue, receiver) {
+      if (isReadOnly) {
+        console.log("警告: 只读的响应式对象不支持修改");
+        return true;
+      }
+
       const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
       const oldValue = target[key];
 
@@ -144,6 +157,11 @@ const createReactive = (originData, isShallow) => {
       return Reflect.has(target, key);
     },
     deleteProperty(target, key) {
+      if (isReadOnly) {
+        console.log("警告: 只读的响应式对象不支持删除");
+        return true;
+      }
+
       const isOwn = target.hasOwnProperty(key);
       const isDeleted = Reflect.deleteProperty(target, key);
 
@@ -152,6 +170,8 @@ const createReactive = (originData, isShallow) => {
         console.log("deleteProperty: 拦截删除属性操作");
         trigger(target, key, typeMap.DEL);
       }
+
+      return isDeleted;
     },
     ownKeys(target) {
       // 解决: 使用惟一key拦截for in 操作
@@ -170,6 +190,10 @@ const reactive = (originData) => {
 
 const shallowReactive = (originData) => {
   return createReactive(originData, true);
+};
+
+const readOnlyReactive = (originData) => {
+  return createReactive(originData, false, true);
 };
 
 function effectFactory(effectFn, options = {}) {
@@ -278,11 +302,10 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const obj = shallowReactive({ person: { name: "rww" } });
+const obj = readOnlyReactive({ person: { name: "rww" } }, true);
 
 effectFactory(() => {
   console.log("name: ", obj.person.name);
 });
 
-// TODO: 如何设置只读,不让修改值
 obj.person.name = "rww2";
