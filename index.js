@@ -302,10 +302,11 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const obj = readOnlyReactive({ person: { name: "rww" } }, true);
+const arr = reactive(["a"]);
 
 effectFactory(() => {
-  console.log("name: ", obj.person.name);
+  console.log(arr.length);
 });
 
-obj.person.name = "rww2";
+// TODO: 如何触发0的副作用函数
+arr[1] = "b";
