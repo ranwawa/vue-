@@ -9,15 +9,6 @@
  * @Author: ranwawa <ranwawa@zmn.cn>
  */
 
-const data = {
-  name: "冉娃娃",
-  age: 18,
-  showAge: true,
-  get newAge() {
-    return this.age + 100;
-  },
-};
-
 const ITER_KEY = Symbol("forin");
 const bucket = new Map();
 const effectStack = [];
@@ -112,51 +103,53 @@ const trigger = (target, key, type) => {
   });
 };
 
-const proxyData = new Proxy(data, {
-  get(target, key, receiver) {
-    track(target, key);
+const reactive = (originData) => {
+  return new Proxy(originData, {
+    get(target, key, receiver) {
+      track(target, key);
 
-    return Reflect.get(target, key, receiver);
-  },
-  set(target, key, newValue, receiver) {
-    const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
-    const oldValue = target[key];
+      return Reflect.get(target, key, receiver);
+    },
+    set(target, key, newValue, receiver) {
+      const type = target.hasOwnProperty(key) ? typeMap.SET : typeMap.ADD;
+      const oldValue = target[key];
 
-    Reflect.set(target, key, newValue, receiver);
+      Reflect.set(target, key, newValue, receiver);
 
-    // 解决: 只有当值发生变化时才触发副作用函数
-    if (
-      oldValue !== newValue &&
-      !(Number.isNaN(oldValue) && Number.isNaN(newValue))
-    ) {
-      trigger(target, key, type);
-    }
-  },
-  has(target, key) {
-    // 解决: 拦截in操作
-    track(target, key);
+      // 解决: 只有当值发生变化时才触发副作用函数
+      if (
+        oldValue !== newValue &&
+        !(Number.isNaN(oldValue) && Number.isNaN(newValue))
+      ) {
+        trigger(target, key, type);
+      }
+    },
+    has(target, key) {
+      // 解决: 拦截in操作
+      track(target, key);
 
-    return Reflect.has(target, key);
-  },
-  deleteProperty(target, key) {
-    const isOwn = target.hasOwnProperty(key);
-    const isDeleted = Reflect.deleteProperty(target, key);
+      return Reflect.has(target, key);
+    },
+    deleteProperty(target, key) {
+      const isOwn = target.hasOwnProperty(key);
+      const isDeleted = Reflect.deleteProperty(target, key);
 
-    // 解决: 拦截delete操作
-    if (isOwn && isDeleted) {
-      console.log("deleteProperty: 拦截删除属性操作");
-      trigger(target, key, typeMap.DEL);
-    }
-  },
-  ownKeys(target) {
-    // 解决: 使用惟一key拦截for in 操作
-    track(target, ITER_KEY);
+      // 解决: 拦截delete操作
+      if (isOwn && isDeleted) {
+        console.log("deleteProperty: 拦截删除属性操作");
+        trigger(target, key, typeMap.DEL);
+      }
+    },
+    ownKeys(target) {
+      // 解决: 使用惟一key拦截for in 操作
+      track(target, ITER_KEY);
 
-    console.log("ownKeys: 攔截for in操作");
+      console.log("ownKeys: 攔截for in操作");
 
-    return Reflect.ownKeys(target);
-  },
-});
+      return Reflect.ownKeys(target);
+    },
+  });
+};
 
 function effectFactory(effectFn, options = {}) {
   const wrappedEffectFn = () => {
@@ -263,9 +256,3 @@ const watch = (obj, cb, options = {}) => {
     wrappedEffect();
   }
 };
-
-effectFactory(() => {
-  console.log(proxyData.age);
-});
-
-proxyData.age = 18;
