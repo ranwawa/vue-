@@ -201,8 +201,13 @@ const createReactive = (originData, isShallow, isReadOnly) => {
       return isDeleted;
     },
     ownKeys(target) {
-      // 解决: 使用惟一key拦截for in 操作
-      track(target, ITER_KEY);
+      if (Array.isArray(target)) {
+        // 解决: 使用length拦截数组上的for in循环,避免在trigger中symbol无法转换成数值的异常
+        track(target, "length");
+      } else {
+        // 解决: 使用惟一key拦截for in 操作
+        track(target, ITER_KEY);
+      }
 
       console.log("ownKeys: 攔截for in操作");
 
@@ -339,5 +344,4 @@ effectFactory(() => {
   }
 });
 
-// TODO: 如何监听监听for in循环
 arr.length = 0;
