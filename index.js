@@ -334,12 +334,8 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const arr = reactive(["a", "b"]);
+const obj = {};
+const arr = reactive([obj]);
 
-effectFactory(() => {
-  for (const iterator of arr) {
-    console.log(iterator);
-  }
-});
-
-arr.length = 10;
+// TODO: 为什么会输出false
+console.log(arr.includes(arr[0]));
