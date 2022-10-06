@@ -284,4 +284,5 @@ effectFactory(() => {
   console.log("name: ", obj.person.name);
 });
 
+// TODO: 如何设置只读,不让修改值
 obj.person.name = "rww2";
