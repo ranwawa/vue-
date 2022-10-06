@@ -63,7 +63,7 @@ const track = (target, key) => {
   activeEffect.deps.push(dependencies);
 };
 
-const trigger = (target, key, type) => {
+const trigger = (target, key, type, newValue) => {
   const currentDependenciesMap = bucket.get(target);
 
   if (!currentDependenciesMap) {
@@ -100,6 +100,17 @@ const trigger = (target, key, type) => {
       lengthEffectList.forEach((interatorEffect) => {
         waitToRunEffectList.add(interatorEffect);
       });
+  }
+
+  // 解决: 修改数组length属性,触发被删除索引对应的副作用函数
+  if (Array.isArray(target) && key === "length") {
+    currentDependenciesMap.forEach((arrIndexEffectList, arrIndex) => {
+      if (arrIndex >= newValue) {
+        arrIndexEffectList.forEach((arrIndexEffect) => {
+          waitToRunEffectList.add(arrIndexEffect);
+        });
+      }
+    });
   }
 
   waitToRunEffectList.forEach((waitToRunEffect) => {
@@ -163,7 +174,7 @@ const createReactive = (originData, isShallow, isReadOnly) => {
         !(Number.isNaN(oldValue) && Number.isNaN(newValue));
 
       if (isCurrentObj && isChangedValue) {
-        trigger(target, key, type);
+        trigger(target, key, type, newValue);
       }
     },
     has(target, key) {
@@ -321,7 +332,7 @@ const watch = (obj, cb, options = {}) => {
 const arr = reactive(["a"]);
 
 effectFactory(() => {
-  console.log(arr.length);
+  console.log(arr[0]);
 });
 
-arr[1] = "b";
+arr.length = 0;
