@@ -21,6 +21,7 @@ const typeMap = {
 };
 const reactiveMap = new Map();
 const arrayInstrumentation = {};
+let shouldTrack = true;
 
 ["indexOf", "lastIndexOf", "includes"].forEach((methodName) => {
   const protoMethod = Array.prototype[methodName];
@@ -33,6 +34,17 @@ const arrayInstrumentation = {};
     }
 
     return protoMethod.apply(this.__raw, args);
+  };
+});
+
+["push", "pop", "shift", "unshift", "splice"].forEach((methodName) => {
+  const protoMethod = Array.prototype[methodName];
+
+  arrayInstrumentation[methodName] = function (...args) {
+    shouldTrack = false;
+    const res = protoMethod.apply(this, args);
+    shouldTrack = true;
+    return true;
   };
 });
 
@@ -54,7 +66,8 @@ const flushJob = (job) => {
 const track = (target, key) => {
   const activeEffect = effectStack[effectStack.length - 1];
 
-  if (!activeEffect) return;
+  // 解决: 数组上隐匿修改长度的方法不收集依赖,解决重复调用这类方法导致的死循环问题
+  if (!activeEffect || !shouldTrack) return;
 
   let dependenciesMap = bucket.get(target);
 
@@ -204,6 +217,8 @@ const createReactive = (originData, isShallow, isReadOnly) => {
       if (isCurrentObj && isChangedValue) {
         trigger(target, key, type, newValue);
       }
+
+      return true;
     },
     has(target, key) {
       // 解决: 拦截in操作
