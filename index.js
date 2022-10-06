@@ -332,7 +332,12 @@ const watch = (obj, cb, options = {}) => {
 const arr = reactive(["a"]);
 
 effectFactory(() => {
-  console.log(arr[0]);
+  for (const key in arr) {
+    if (Object.hasOwnProperty.call(arr, key)) {
+      console.log(key);
+    }
+  }
 });
 
+// TODO: 如何监听监听for in循环
 arr.length = 0;
