@@ -442,12 +442,12 @@ const watch = (obj, cb, options = {}) => {
 
 const m = new Map();
 const p1 = reactive(m);
-const p2 = reactive(new Map());
-
-p1.set("p2", p2);
 
 effectFactory(() => {
-  console.log(m.get("p2").size);
+  p1.forEach((value, key) => {
+    console.log(value, key);
+  });
 });
 
-m.get("p2").set("x", 1);
+// TODO: 如何监听并触发forEach方法
+p1.set("age", 18);
