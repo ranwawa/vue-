@@ -437,10 +437,15 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const p = reactive(new Map([["age", 18]]));
+const m = new Map();
+const p1 = reactive(m);
+const p2 = reactive(new Map());
+
+p1.set("p2", p2);
 
 effectFactory(() => {
-  console.log(p.get("age"));
+  console.log(m.get("p2").size);
 });
 
-p.set("age", 18);
+// TODO: m是原始数据,不应该具备响应式能力
+m.get("p2").set("x", 1);
