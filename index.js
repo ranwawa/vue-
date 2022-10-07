@@ -22,6 +22,14 @@ const typeMap = {
 const reactiveMap = new Map();
 const arrayInstrumentation = {};
 const mutableInstrumentation = {
+  // 解决: 集合类型收集并触发forEach相关的副作用函数
+  forEach(callback) {
+    const target = this.__raw;
+
+    track(target, ITER_KEY);
+
+    target.forEach(callback);
+  },
   get(key) {
     const target = this.__raw;
     const value = target.get(key);
@@ -449,5 +457,4 @@ effectFactory(() => {
   });
 });
 
-// TODO: 如何监听并触发forEach方法
 p1.set("age", 18);
