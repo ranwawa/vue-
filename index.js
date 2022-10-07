@@ -386,6 +386,9 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const proxyMap = reactive(new Map());
+const map = new Map();
+map.set("age", 18);
+const proxyMap = reactive(map);
 
-console.log(proxyMap.size);
+// TODO: 报incompatible receiver异常
+proxyMap.delete("age");
