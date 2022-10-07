@@ -407,10 +407,11 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const p = reactive(new Set([1, 2, 3]));
+const p = reactive(new Map([["age", 18]]));
 
 effectFactory(() => {
-  console.log(p.size);
+  console.log(p.get("age"));
 });
 
-p.add(3);
+// TODO: 如何监听get,用set触发副作用函数
+p.set("age", 19);
