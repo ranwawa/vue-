@@ -22,6 +22,36 @@ const typeMap = {
 const reactiveMap = new Map();
 const arrayInstrumentation = {};
 const mutableInstrumentation = {
+  get(key) {
+    const target = this.__raw;
+    const value = target.get(key);
+
+    track(target, key);
+
+    if (typeof value === "object" && value !== null) {
+      return reactive(value);
+    }
+
+    return value;
+  },
+  // 解决: 集合类型触发get的副作用函数
+  set(key, value) {
+    const target = this.__raw;
+    const hasKey = target.has(key);
+    const oldValue = target.get(key);
+    target.set(key, value);
+
+    if (!hasKey) {
+      trigger(target, key, typeMap.ADD, value);
+    } else if (
+      oldValue !== value &&
+      (oldValue === oldValue || value === value)
+    ) {
+      trigger(target, key, typeMap.SET, value);
+    }
+
+    return;
+  },
   delete(key) {
     const target = this.__raw;
     target.delete(key);
@@ -413,5 +443,4 @@ effectFactory(() => {
   console.log(p.get("age"));
 });
 
-// TODO: 如何监听get,用set触发副作用函数
-p.set("age", 19);
+p.set("age", 18);
