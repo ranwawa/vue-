@@ -22,15 +22,18 @@ const typeMap = {
 const reactiveMap = new Map();
 const arrayInstrumentation = {};
 const mutableInstrumentation = {
-  delete(...args) {
+  delete(key) {
     const target = this.__raw;
-    target.delete(...args);
+    target.delete(key);
     trigger(target, ITER_KEY, typeMap.DEL);
   },
-  add(...args) {
+  add(key) {
     const target = this.__raw;
-    target.add(...args);
-    trigger(target, ITER_KEY, typeMap.ADD);
+    target.add(key);
+    // 解决: 添加重复的元素,不用触发副作用函数
+    if (!target.has(key)) {
+      trigger(target, ITER_KEY, typeMap.ADD);
+    }
   },
 };
 let shouldTrack = true;
@@ -410,5 +413,4 @@ effectFactory(() => {
   console.log(p.size);
 });
 
-p.add(4);
-p.add(4);
+p.add(3);
