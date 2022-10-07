@@ -458,3 +458,4 @@ effectFactory(() => {
 });
 
 p1.set("age", 18);
+p1.set("age", 19);
