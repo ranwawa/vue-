@@ -39,7 +39,10 @@ const mutableInstrumentation = {
     const target = this.__raw;
     const hasKey = target.has(key);
     const oldValue = target.get(key);
-    target.set(key, value);
+    // 解决: 设置响应式数据时会污染原始数据的问题
+    const rawValue = value.__raw || value;
+
+    target.set(key, rawValue);
 
     if (!hasKey) {
       trigger(target, key, typeMap.ADD, value);
@@ -447,5 +450,4 @@ effectFactory(() => {
   console.log(m.get("p2").size);
 });
 
-// TODO: m是原始数据,不应该具备响应式能力
 m.get("p2").set("x", 1);
