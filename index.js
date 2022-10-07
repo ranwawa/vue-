@@ -177,6 +177,11 @@ const createReactive = (originData, isShallow, isReadOnly) => {
         return Reflect.get(arrayInstrumentation, key, receiver);
       }
 
+      // 解决: 访问集合类型的size属性报incompatible reciever异常
+      if (key === "size") {
+        return Reflect.get(target, key, target);
+      }
+
       const value = Reflect.get(target, key, receiver);
       // 解决: 深响应
       const isObjectValue = typeof value === "object" && value !== null;
@@ -381,7 +386,6 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const proxyMap = new Proxy(new Map(), {});
+const proxyMap = reactive(new Map());
 
-// TODO: 读取size时为什么会报incompatible reciever的异常
 console.log(proxyMap.size);
