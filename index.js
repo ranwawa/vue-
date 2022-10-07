@@ -454,14 +454,17 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
+const key = { key: 1 };
+const value = new Set([1, 2]);
 const m = new Map();
+m.set(key, value);
 const p1 = reactive(m);
 
 effectFactory(() => {
-  p1.forEach((value, key) => {
-    console.log(value, key);
+  p1.forEach((value) => {
+    console.log(value.size);
   });
 });
 
-p1.set("age", 18);
-p1.set("age", 19);
+// TODO: 修改集合元素中子元素的值,没触发副作用函数执行
+p1.get(key).delete(1);
