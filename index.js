@@ -168,7 +168,13 @@ const trigger = (target, key, type, newValue) => {
     });
 
   // 解决: 如果是新增/删除属性,则要触发for in相关副作用函数
-  if (type === typeMap.ADD || type === typeMap.DEL) {
+  if (
+    type === typeMap.ADD ||
+    type === typeMap.DEL ||
+    // 解决: 集合类型修改值,触发forEach相关副作用函数
+    (Object.prototype.toString.call(target) === "[object Map]" &&
+      type === typeMap.SET)
+  ) {
     const iteratorEffectList = currentDependenciesMap.get(ITER_KEY);
 
     iteratorEffectList &&
