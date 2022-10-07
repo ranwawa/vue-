@@ -381,12 +381,7 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const arr = reactive([]);
+const proxyMap = new Proxy(new Map(), {});
 
-effectFactory(() => {
-  arr.push(1);
-});
-
-effectFactory(() => {
-  arr.push(2);
-});
+// TODO: 读取size时为什么会报incompatible reciever的异常
+console.log(proxyMap.size);
