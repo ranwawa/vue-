@@ -23,12 +23,21 @@ const reactiveMap = new Map();
 const arrayInstrumentation = {};
 const mutableInstrumentation = {
   // 解决: 集合类型收集并触发forEach相关的副作用函数
-  forEach(callback) {
+  forEach(callback, thisArg) {
     const target = this.__raw;
+    const warpCallbackParam = (param) =>
+      typeof param === "object" && param !== null ? reactive(param) : param;
 
     track(target, ITER_KEY);
 
-    target.forEach(callback);
+    target.forEach((value, key) => {
+      callback.call(
+        thisArg,
+        warpCallbackParam(value),
+        warpCallbackParam(key),
+        this
+      );
+    });
   },
   get(key) {
     const target = this.__raw;
@@ -466,5 +475,4 @@ effectFactory(() => {
   });
 });
 
-// TODO: 修改集合元素中子元素的值,没触发副作用函数执行
 p1.get(key).delete(1);
