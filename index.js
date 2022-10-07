@@ -411,3 +411,4 @@ effectFactory(() => {
 });
 
 p.add(4);
+p.add(4);
