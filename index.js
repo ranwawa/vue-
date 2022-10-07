@@ -21,6 +21,13 @@ const typeMap = {
 };
 const reactiveMap = new Map();
 const arrayInstrumentation = {};
+const mutableInstrumentation = {
+  delete(...args) {
+    const target = this.__raw;
+    target.delete(...args);
+    trigger(target, ITER_KEY, typeMap.DEL);
+  },
+};
 let shouldTrack = true;
 
 ["indexOf", "lastIndexOf", "includes"].forEach((methodName) => {
@@ -167,6 +174,12 @@ const createReactive = (originData, isShallow, isReadOnly) => {
         return target;
       }
 
+      // 解决: 访问集合类型的size属性报iITER_KEYmpate reciever异常
+      if (key === "size") {
+        track(target, ITER_KEY);
+        return Reflect.get(target, key, target);
+      }
+
       // 解決: 只读属性不用收集依赖,数组for of触发副作用函数trigger时报错的问题
       if (!isReadOnly && typeof key !== "symbol") {
         track(target, key);
@@ -177,14 +190,9 @@ const createReactive = (originData, isShallow, isReadOnly) => {
         return Reflect.get(arrayInstrumentation, key, receiver);
       }
 
-      // 解决: 访问集合类型的size属性报incompatible reciever异常
-      if (key === "size") {
-        return Reflect.get(target, key, target);
-      }
-
-      // 解决: 调用集合类型的delete方法报incompatible reciever异常
-      if (key === "delete") {
-        return target[key].bind(target);
+      // 解决: 调用集合类型上的方法报incompatible reciever异常
+      if (mutableInstrumentation[key]) {
+        return mutableInstrumentation[key];
       }
 
       const value = Reflect.get(target, key, receiver);
@@ -397,5 +405,4 @@ effectFactory(() => {
   console.log(p.size);
 });
 
-// TODO: 删除集合元素时,应该触发size的副作用函数
 p.delete(1);
