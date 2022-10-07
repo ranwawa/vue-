@@ -27,6 +27,11 @@ const mutableInstrumentation = {
     target.delete(...args);
     trigger(target, ITER_KEY, typeMap.DEL);
   },
+  add(...args) {
+    const target = this.__raw;
+    target.add(...args);
+    trigger(target, ITER_KEY, typeMap.ADD);
+  },
 };
 let shouldTrack = true;
 
@@ -405,5 +410,4 @@ effectFactory(() => {
   console.log(p.size);
 });
 
-// TODO: add触发size的副作用函数
 p.add(4);
