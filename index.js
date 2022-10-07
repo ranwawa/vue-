@@ -182,6 +182,11 @@ const createReactive = (originData, isShallow, isReadOnly) => {
         return Reflect.get(target, key, target);
       }
 
+      // 解决: 调用集合类型的delete方法报incompatible reciever异常
+      if (key === "delete") {
+        return target[key].bind(target);
+      }
+
       const value = Reflect.get(target, key, receiver);
       // 解决: 深响应
       const isObjectValue = typeof value === "object" && value !== null;
@@ -390,5 +395,4 @@ const map = new Map();
 map.set("age", 18);
 const proxyMap = reactive(map);
 
-// TODO: 报incompatible receiver异常
 proxyMap.delete("age");
