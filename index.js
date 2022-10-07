@@ -405,4 +405,5 @@ effectFactory(() => {
   console.log(p.size);
 });
 
-p.delete(1);
+// TODO: add触发size的副作用函数
+p.add(4);
