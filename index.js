@@ -391,8 +391,11 @@ const watch = (obj, cb, options = {}) => {
   }
 };
 
-const map = new Map();
-map.set("age", 18);
-const proxyMap = reactive(map);
+const p = reactive(new Set([1, 2, 3]));
 
-proxyMap.delete("age");
+effectFactory(() => {
+  console.log(p.size);
+});
+
+// TODO: 删除集合元素时,应该触发size的副作用函数
+p.delete(1);
