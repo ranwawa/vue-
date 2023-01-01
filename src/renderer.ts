@@ -99,7 +99,9 @@ export const { render } = createRenderer({
     if (shouldSetAsProps(ele, key)) {
       const type = typeof ele[key];
 
-      if (type === "boolean" && nextValue === "") {
+      if (key === "class") {
+        ele.className = nextValue as string;
+      } else if (type === "boolean" && nextValue === "") {
         ele[key] = true;
       } else {
         ele[key] = nextValue;
