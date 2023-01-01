@@ -58,16 +58,16 @@ function createRenderer(params: Params) {
     }
   }
 
-  function render(node, container) {
-    if (node) {
-      patch(container._node, node, container);
+  function render(vNode, container) {
+    if (vNode) {
+      patch(container._node, vNode, container);
     } else {
-      if (!container._node) {
+      if (container._node) {
         container.innerHTML = "";
       }
     }
 
-    container._node = container.node;
+    container._node = vNode;
   }
 
   return {
