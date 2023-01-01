@@ -12,6 +12,9 @@ effect(() => {
           type: "input",
           props: {
             form: "form1",
+            onInput: (e) => {
+              console.log(e.target.value);
+            },
           },
         },
       ],
@@ -19,7 +22,3 @@ effect(() => {
     document.getElementById("app")
   );
 });
-
-setTimeout(() => {
-  render(null, document.getElementById("app"));
-}, 3000);
