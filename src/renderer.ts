@@ -14,7 +14,17 @@ function createRenderer(params) {
 
     if (props) {
       Object.entries(props).forEach(([key, value]) => {
-        ele.setAttribute(key, value);
+        if (key in ele) {
+          const type = typeof ele[key];
+
+          if (type === "boolean" && value === "") {
+            ele[key] = true;
+          } else {
+            ele[key] = value;
+          }
+        } else {
+          ele.setAttribute(key, value);
+        }
       });
     }
 
