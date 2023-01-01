@@ -9,25 +9,10 @@ effect(() => {
       type: "div",
       children: [
         {
-          type: "button",
+          type: "input",
           props: {
-            disabled: true,
+            form: "form1",
           },
-          children: "禁用的按钮",
-        },
-        {
-          type: "button",
-          props: {
-            disabled: "",
-          },
-          children: "禁用的按钮",
-        },
-        {
-          type: "button",
-          props: {
-            disabled: false,
-          },
-          children: "可以点的按钮",
         },
       ],
     },
