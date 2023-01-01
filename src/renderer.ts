@@ -4,8 +4,32 @@ interface Node {
   children: string | Node[];
 }
 
-function createRenderer(params) {
-  const { createElement, setElementText, insert } = params;
+type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
+interface Params {
+  createElement: (type: string) => HTMLElement;
+  setElementText: (ele: HTMLElement, text: string) => void;
+  insert: (
+    ele: HTMLElement,
+    container: HTMLElement,
+    anchor?: HTMLElement
+  ) => void;
+  patchProps: (
+    ele: HTMLElement,
+    key: string,
+    nextValue: unknown,
+    shouldSetAsProps: ShouldSetAsProps
+  ) => void;
+  shouldSetAsProps: ShouldSetAsProps;
+}
+
+function createRenderer(params: Params) {
+  const {
+    createElement,
+    setElementText,
+    insert,
+    shouldSetAsProps,
+    patchProps,
+  } = params;
 
   function mountElement(node: Node, container) {
     const { props, type, children } = node;
@@ -14,17 +38,7 @@ function createRenderer(params) {
 
     if (props) {
       Object.entries(props).forEach(([key, value]) => {
-        if (key in ele) {
-          const type = typeof ele[key];
-
-          if (type === "boolean" && value === "") {
-            ele[key] = true;
-          } else {
-            ele[key] = value;
-          }
-        } else {
-          ele.setAttribute(key, value);
-        }
+        patchProps(ele, key, value, shouldSetAsProps);
       });
     }
 
@@ -70,5 +84,28 @@ export const { render } = createRenderer({
   },
   insert(el, parent, anchor) {
     parent.insertBefore(el, anchor);
+  },
+  shouldSetAsProps(el, key) {
+    if (key === "form" && el.tagName === "INPUT") return false;
+
+    return key in el;
+  },
+  patchProps(
+    ele: HTMLElement,
+    key: string,
+    nextValue: unknown,
+    shouldSetAsProps
+  ) {
+    if (shouldSetAsProps(ele, key)) {
+      const type = typeof ele[key];
+
+      if (type === "boolean" && nextValue === "") {
+        ele[key] = true;
+      } else {
+        ele[key] = nextValue;
+      }
+    } else {
+      ele.setAttribute(key, nextValue as string);
+    }
   },
 });
