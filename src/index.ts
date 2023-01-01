@@ -19,3 +19,7 @@ effect(() => {
     document.getElementById("app")
   );
 });
+
+setTimeout(() => {
+  render(null, document.getElementById("app"));
+}, 3000);

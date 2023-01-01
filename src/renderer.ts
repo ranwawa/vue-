@@ -1,7 +1,8 @@
-interface Node {
+interface VNode {
   type: "string";
   props: Record<string, unknown>;
-  children: string | Node[];
+  children: string | VNode[];
+  el: HTMLElement;
 }
 
 type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
@@ -31,10 +32,11 @@ function createRenderer(params: Params) {
     patchProps,
   } = params;
 
-  function mountElement(node: Node, container) {
-    const { props, type, children } = node;
+  function mountElement(vNode: VNode, container) {
+    const { props, type, children } = vNode;
 
     const ele = createElement(type);
+    vNode.el = ele;
 
     if (props) {
       Object.entries(props).forEach(([key, value]) => {
@@ -42,10 +44,10 @@ function createRenderer(params: Params) {
       });
     }
 
-    if (typeof node.children === "string") {
-      setElementText(ele, node.children);
-    } else if (Array.isArray(node.children)) {
-      node.children.forEach((childNode) => patch(null, childNode, ele));
+    if (typeof vNode.children === "string") {
+      setElementText(ele, vNode.children);
+    } else if (Array.isArray(vNode.children)) {
+      vNode.children.forEach((childNode) => patch(null, childNode, ele));
     }
 
     insert(ele, container);
@@ -58,12 +60,15 @@ function createRenderer(params: Params) {
     }
   }
 
-  function render(vNode, container) {
+  function render(vNode, container: HTMLElement & { _node?: VNode }) {
     if (vNode) {
       patch(container._node, vNode, container);
     } else {
-      if (container._node) {
-        container.innerHTML = "";
+      const { _node } = container;
+
+      if (_node) {
+        const { el } = _node;
+        el.parentNode?.removeChild(el);
       }
     }
 
