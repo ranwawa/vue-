@@ -7,6 +7,9 @@ effect(() => {
   render(
     {
       type: "div",
+      props: {
+        title: "这是一个div",
+      },
       children: [
         {
           type: "h1",

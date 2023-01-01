@@ -1,8 +1,22 @@
+interface Node {
+  type: "string";
+  props: Record<string, unknown>;
+  children: string | Node[];
+}
+
 function createRenderer(params) {
   const { createElement, setElementText, insert } = params;
 
-  function mountElement(node, container) {
-    const ele = createElement(node.type);
+  function mountElement(node: Node, container) {
+    const { props, type, children } = node;
+
+    const ele = createElement(type);
+
+    if (props) {
+      Object.entries(props).forEach(([key, value]) => {
+        ele.setAttribute(key, value);
+      });
+    }
 
     if (typeof node.children === "string") {
       setElementText(ele, node.children);
