@@ -1,5 +1,3 @@
-const { effect, ref } = VueReactivity;
-
 function createRenderer(params) {
   const { createElement, setElementText, insert } = params;
 
@@ -37,7 +35,7 @@ function createRenderer(params) {
   };
 }
 
-const { render } = createRenderer({
+export const { render } = createRenderer({
   createElement(type) {
     return document.createElement(type);
   },
@@ -47,16 +45,4 @@ const { render } = createRenderer({
   insert(el, parent, anchor) {
     parent.insertBefore(el, anchor);
   },
-});
-
-var count = ref(1);
-
-effect(() => {
-  render(
-    {
-      type: "h1",
-      children: "hello",
-    },
-    document.getElementById("app")
-  );
 });
