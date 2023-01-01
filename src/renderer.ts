@@ -101,7 +101,9 @@ export const { render } = createRenderer({
     nextValue: unknown,
     shouldSetAsProps
   ) {
-    if (shouldSetAsProps(ele, key)) {
+    if (/^on/.test(key)) {
+      ele.addEventListener(key.slice(2).toLowerCase(), nextValue as any);
+    } else if (shouldSetAsProps(ele, key)) {
       const type = typeof ele[key];
 
       if (key === "class") {
