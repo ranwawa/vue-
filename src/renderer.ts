@@ -6,6 +6,8 @@ function createRenderer(params) {
 
     if (typeof node.children === "string") {
       setElementText(ele, node.children);
+    } else if (Array.isArray(node.children)) {
+      node.children.forEach((childNode) => patch(null, childNode, ele));
     }
 
     insert(ele, container);
