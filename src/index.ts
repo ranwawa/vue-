@@ -7,17 +7,27 @@ effect(() => {
   render(
     {
       type: "div",
-      props: {
-        title: "这是一个div",
-      },
       children: [
         {
-          type: "h1",
-          children: "h1",
+          type: "button",
+          props: {
+            disabled: true,
+          },
+          children: "禁用的按钮",
         },
         {
-          type: "h2",
-          children: "h2",
+          type: "button",
+          props: {
+            disabled: "",
+          },
+          children: "禁用的按钮",
+        },
+        {
+          type: "button",
+          props: {
+            disabled: false,
+          },
+          children: "可以点的按钮",
         },
       ],
     },
