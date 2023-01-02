@@ -1,8 +1,8 @@
 interface VNode {
-  type: "string";
-  props: Record<string, unknown>;
+  type: string;
   children: string | VNode[];
-  el: HTMLElement;
+  props?: Record<string, unknown>;
+  el?: HTMLElement & { _node?: VNode };
 }
 
 type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
@@ -53,23 +53,28 @@ function createRenderer(params: Params) {
     insert(ele, container);
   }
 
-  function patch(oldNode, newNode, container) {
+  function patch(oldNode: VNode, newNode: VNode, container: HTMLElement) {
     if (oldNode) {
-    } else {
-      mountElement(newNode, container);
+      unmount(oldNode);
+      oldNode = null;
+    }
+
+    mountElement(newNode, container);
+  }
+
+  function unmount(oldVNode: VNode) {
+    const { el } = oldVNode;
+
+    if (el) {
+      el.parentNode?.removeChild(el);
     }
   }
 
-  function render(vNode, container: HTMLElement & { _node?: VNode }) {
+  function render(vNode: VNode, container: HTMLElement & { _node?: VNode }) {
     if (vNode) {
       patch(container._node, vNode, container);
     } else {
-      const { _node } = container;
-
-      if (_node) {
-        const { el } = _node;
-        el.parentNode?.removeChild(el);
-      }
+      unmount(container._node);
     }
 
     container._node = vNode;
