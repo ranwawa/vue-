@@ -5,8 +5,8 @@ const app = document.querySelector<HTMLElement>("#app");
 
 render(
   {
-    type: Text,
-    children: "文本节点",
+    type: "comment",
+    children: "这是一个注释",
     props: {},
   },
   app
