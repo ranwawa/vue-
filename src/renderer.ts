@@ -5,25 +5,30 @@ type VEI = {
   attached: number;
 };
 
+type ELExtra = {
+  _node?: VNode;
+  _vei?: VEI;
+};
+type ELHtml = HTMLElement & ELExtra;
+type ELText = Text & ELExtra;
+type ELComment = Comment & ELExtra;
+
 interface VNode {
-  type: string;
+  type: string | symbol;
   children: string | VNode[];
   props: Record<string, unknown>;
-  el?: HTMLElement & {
-    _node?: VNode;
-    _vei?: VEI;
-  };
+  el?: ELHtml | ELText | ELComment;
 }
-
-type EL = VNode["el"];
 
 type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
 
 interface Params {
   createElement: (type: string) => HTMLElement;
   setElementText: (ele: HTMLElement, text: string) => void;
+  createText: (text: string) => Text;
+  setText: (ele: Text, text: string) => void;
   insert: (
-    ele: HTMLElement,
+    ele: VNode["el"],
     container: HTMLElement,
     anchor?: HTMLElement
   ) => void;
@@ -36,10 +41,14 @@ interface Params {
   shouldSetAsProps: ShouldSetAsProps;
 }
 
+export const Text = Symbol("text");
+
 function createRenderer(params: Params) {
   const {
     createElement,
     setElementText,
+    createText,
+    setText,
     insert,
     shouldSetAsProps,
     patchProps,
@@ -66,7 +75,7 @@ function createRenderer(params: Params) {
     insert(ele, container);
   }
 
-  function patchChildren(oldNode: VNode, newNode: VNode, container: EL) {
+  function patchChildren(oldNode: VNode, newNode: VNode, container: ELHtml) {
     enum ChildrenType {
       "string" = "string",
       "array" = "array",
@@ -132,7 +141,7 @@ function createRenderer(params: Params) {
   }
 
   function patchElement(oldNode: VNode, newNode: VNode) {
-    const ele = (newNode.el = oldNode.el);
+    const ele = (newNode.el = oldNode.el) as ELHtml;
     const oldProps = oldNode.props;
     const newProps = newNode.props;
 
@@ -164,6 +173,20 @@ function createRenderer(params: Params) {
     }
 
     switch (typeof newType) {
+      case "symbol":
+        const newChildren = newNode.children as string;
+
+        if (newType === Text) {
+          if (oldNode) {
+            oldNode.children !== newChildren &&
+              setText(oldNode.el as ELText, newChildren as string);
+          } else {
+            const el = createText(newChildren as string);
+            newNode.el = el;
+            insert(el, container);
+          }
+        }
+        break;
       // html标签
       case "string":
         oldNode
@@ -209,6 +232,12 @@ export const { render } = createRenderer({
   setElementText(el, text) {
     el.textContent = text;
   },
+  createText(text) {
+    return document.createTextNode(text);
+  },
+  setText(el, text) {
+    el.nodeValue = text;
+  },
   insert(el, parent, anchor) {
     parent.insertBefore(el, anchor);
   },
@@ -218,7 +247,7 @@ export const { render } = createRenderer({
     return key in el;
   },
   patchProps(
-    ele: EL,
+    ele: ELHtml,
     key: string,
     nextValue: unknown | EventListenerOrEventListenerObject,
     shouldSetAsProps

@@ -1,11 +1,11 @@
 const { effect, ref } = VueReactivity;
-import { render } from "./renderer.js";
+import { render, Text } from "./renderer.js";
 
 const app = document.querySelector<HTMLElement>("#app");
 
 render(
   {
-    type: "text",
+    type: Text,
     children: "文本节点",
     props: {},
   },
