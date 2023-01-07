@@ -27,6 +27,7 @@ interface Params {
   setElementText: (ele: HTMLElement, text: string) => void;
   createText: (text: string) => Text;
   setText: (ele: Text, text: string) => void;
+  createComment: (text: string) => Comment;
   insert: (
     ele: VNode["el"],
     container: HTMLElement,
@@ -42,6 +43,7 @@ interface Params {
 }
 
 export const Text = Symbol("text");
+export const Comment = Symbol("comment");
 
 function createRenderer(params: Params) {
   const {
@@ -50,6 +52,7 @@ function createRenderer(params: Params) {
     createText,
     setText,
     insert,
+    createComment,
     shouldSetAsProps,
     patchProps,
   } = params;
@@ -185,6 +188,15 @@ function createRenderer(params: Params) {
             newNode.el = el;
             insert(el, container);
           }
+        } else if (newType === Comment) {
+          if (oldNode) {
+            oldNode.children !== newChildren &&
+              setText(oldNode.el as ELText, newChildren as string);
+          } else {
+            const el = createComment(newChildren as string);
+            newNode.el = el;
+            insert(el, container);
+          }
         }
         break;
       // html标签
@@ -237,6 +249,9 @@ export const { render } = createRenderer({
   },
   setText(el, text) {
     el.nodeValue = text;
+  },
+  createComment(text) {
+    return document.createComment(text);
   },
   insert(el, parent, anchor) {
     parent.insertBefore(el, anchor);
