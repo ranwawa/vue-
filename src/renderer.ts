@@ -6,6 +6,7 @@ interface VNode {
 }
 
 type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
+
 interface Params {
   createElement: (type: string) => HTMLElement;
   setElementText: (ele: HTMLElement, text: string) => void;
@@ -17,7 +18,7 @@ interface Params {
   patchProps: (
     ele: HTMLElement,
     key: string,
-    nextValue: unknown,
+    nextValue: unknown | EventListenerOrEventListenerObject,
     shouldSetAsProps: ShouldSetAsProps
   ) => void;
   shouldSetAsProps: ShouldSetAsProps;
@@ -107,7 +108,12 @@ export const { render } = createRenderer({
     shouldSetAsProps
   ) {
     if (/^on/.test(key)) {
-      ele.addEventListener(key.slice(2).toLowerCase(), nextValue as any);
+      const eventType = key.slice(2).toLowerCase();
+      const eventHandler = Array.isArray(nextValue)
+        ? (event) => nextValue.forEach((handler) => handler(event))
+        : (nextValue as EventListenerOrEventListenerObject);
+
+      ele.addEventListener(eventType, eventHandler);
     } else if (shouldSetAsProps(ele, key)) {
       const type = typeof ele[key];
 
