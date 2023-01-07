@@ -1,12 +1,16 @@
 const { effect, ref } = VueReactivity;
-import { render, Comment } from "./renderer.js";
+import { render, Fragment } from "./renderer.js";
 
 const app = document.querySelector<HTMLElement>("#app");
 
 render(
   {
-    type: Comment,
-    children: "这是一个注释",
+    type: Fragment,
+    children: [
+      { type: "h1", children: "h1", props: {} },
+      { type: "h2", children: "h2", props: {} },
+      { type: "h2", children: "h2", props: {} },
+    ],
     props: {},
   },
   app

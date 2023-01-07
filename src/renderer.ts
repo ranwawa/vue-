@@ -44,6 +44,7 @@ interface Params {
 
 export const Text = Symbol("text");
 export const Comment = Symbol("comment");
+export const Fragment = Symbol("fragment");
 
 function createRenderer(params: Params) {
   const {
