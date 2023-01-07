@@ -3,13 +3,28 @@ import { render } from "./renderer.js";
 
 const app = document.querySelector<HTMLElement>("#app");
 
-render(
-  {
-    type: "h1",
-    children: "h1",
-    props: {
-      onClick: [() => console.log(1), () => console.log(2)],
+const bool = ref(false);
+
+effect(() =>
+  render(
+    {
+      type: "h1",
+      props: bool.value && {
+        onClick: [() => console.log(1), () => console.log(2)],
+      },
+      children: [
+        {
+          type: "div",
+          props: {
+            onClick: () => {
+              console.log("将bool修改为true");
+              bool.value = true;
+            },
+          },
+          children: "点我",
+        },
+      ],
     },
-  },
-  app
+    app
+  )
 );
