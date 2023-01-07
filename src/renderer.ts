@@ -1,9 +1,21 @@
+type EventListenerList = (event: Event) => EventListenerOrEventListenerObject[];
+
+type VEI = {
+  value: EventListenerOrEventListenerObject | EventListenerList;
+  attached: number;
+};
+
 interface VNode {
   type: string;
   children: string | VNode[];
   props?: Record<string, unknown>;
-  el?: HTMLElement & { _node?: VNode };
+  el?: HTMLElement & {
+    _node?: VNode;
+    _vei?: VEI;
+  };
 }
+
+type EL = VNode["el"];
 
 type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
 
@@ -102,18 +114,44 @@ export const { render } = createRenderer({
     return key in el;
   },
   patchProps(
-    ele: HTMLElement,
+    ele: EL,
     key: string,
-    nextValue: unknown,
+    nextValue: unknown | EventListenerOrEventListenerObject,
     shouldSetAsProps
   ) {
     if (/^on/.test(key)) {
       const eventType = key.slice(2).toLowerCase();
-      const eventHandler = Array.isArray(nextValue)
-        ? (event) => nextValue.forEach((handler) => handler(event))
-        : (nextValue as EventListenerOrEventListenerObject);
 
-      ele.addEventListener(eventType, eventHandler);
+      function invokeEventHandler(
+        handler: EventListenerOrEventListenerObject,
+        event: Event
+      ) {
+        "handleEvent" in handler ? handler.handleEvent(event) : handler(event);
+      }
+
+      if (!ele._vei) {
+        ele._vei = ele._vei = {
+          value: () => {},
+          attached: -1,
+        };
+      }
+
+      ele._vei = {
+        value: (event: Event) => {
+          if (ele._vei.attached > event.timeStamp) {
+            return;
+          }
+
+          if (Array.isArray(nextValue)) {
+            nextValue.forEach((handler) => invokeEventHandler(handler, event));
+          } else {
+            invokeEventHandler(nextValue, event);
+          }
+        },
+        attached: performance.now(),
+      };
+
+      ele.addEventListener(eventType, ele._vei.value);
     } else if (shouldSetAsProps(ele, key)) {
       const type = typeof ele[key];
 
