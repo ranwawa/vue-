@@ -178,7 +178,7 @@ function createRenderer(params: Params) {
 
     switch (typeof newType) {
       case "symbol":
-        const newChildren = newNode.children as string;
+        const newChildren = newNode.children;
 
         if (newType === Text) {
           if (oldNode) {
@@ -197,6 +197,14 @@ function createRenderer(params: Params) {
             const el = createComment(newChildren as string);
             newNode.el = el;
             insert(el, container);
+          }
+        } else if (newType === Fragment) {
+          if (!oldNode) {
+            (newChildren as VNode[]).forEach((child) => {
+              patch(null, child, container);
+            });
+          } else {
+            patchChildren(oldNode, newNode, container);
           }
         }
         break;
