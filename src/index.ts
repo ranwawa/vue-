@@ -10,7 +10,6 @@ render(
       { type: "p", children: "1" },
       { type: "p", children: "2" },
       { type: "p", children: "3" },
-      { type: "p", children: "4" },
     ],
     props: {},
   },
@@ -21,9 +20,9 @@ render(
   {
     type: Fragment,
     children: [
-      { type: "p", children: "a" },
-      { type: "p", children: "b" },
-      { type: "p", children: "c" },
+      { type: "p", children: "3" },
+      { type: "p", children: "1" },
+      { type: "p", children: "key" },
     ],
     props: {},
   },
