@@ -148,14 +148,28 @@ function createRenderer(params: Params) {
         break;
       case ChildrenType.array:
         const isArray = oldChildrenType === ChildrenType.array;
+        const oldLen = oldChildren.length;
+        const newLen = newChildren.length;
+        const minLen = Math.min(oldLen, newLen);
 
-        for (let index = 0; index < newChildren.length; index++) {
-          patch(
-            isArray ? (oldChildren[index] as VNode) : null,
-            newChildren[index] as VNode,
-            container
-          );
+        if (!isArray) {
+          setElementText(container, "");
+        } else {
+          for (let i = 0; i < minLen; i++) {
+            patch(oldChildren[i] as VNode, newChildren[i] as VNode, container);
+          }
+
+          if (newLen > oldLen) {
+            for (let i = minLen; i < newLen; i++) {
+              patch(null, newChildren[i] as VNode, container);
+            }
+          } else if (newLen < oldLen) {
+            for (let i = minLen; i < oldLen; i++) {
+              unmount(oldChildren[i] as VNode);
+            }
+          }
         }
+
         break;
       case ChildrenType.null:
         if (oldChildrenType === ChildrenType.array) {
