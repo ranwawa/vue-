@@ -147,15 +147,15 @@ function createRenderer(params: Params) {
         }
         break;
       case ChildrenType.array:
-        if (oldChildrenType === ChildrenType.array) {
-          (oldChildren as VNode[]).forEach((child) => {
-            unmount(child);
-          });
-        }
+        const isArray = oldChildrenType === ChildrenType.array;
 
-        (newChildren as VNode[]).forEach((child) => {
-          mountElement(child, container);
-        });
+        for (let index = 0; index < newChildren.length; index++) {
+          patch(
+            isArray ? (oldChildren[index] as VNode) : null,
+            newChildren[index] as VNode,
+            container
+          );
+        }
         break;
       case ChildrenType.null:
         if (oldChildrenType === ChildrenType.array) {
