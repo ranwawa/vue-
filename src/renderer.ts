@@ -16,7 +16,7 @@ type ELComment = Comment & ELExtra;
 interface VNode {
   type: string | symbol;
   children: string | VNode[];
-  props: Record<string, unknown>;
+  props?: Record<string, unknown>;
   el?: ELHtml | ELText | ELComment;
 }
 
@@ -24,6 +24,7 @@ type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
 
 interface Params {
   createElement: (type: string) => HTMLElement;
+  unmount: (type: VNode) => void;
   setElementText: (ele: HTMLElement, text: string) => void;
   createText: (text: string) => Text;
   setText: (ele: Text, text: string) => void;
@@ -46,9 +47,36 @@ export const Text = Symbol("text");
 export const Comment = Symbol("comment");
 export const Fragment = Symbol("fragment");
 
+const domOperation = {
+  createElement: 0,
+  unmount: 0,
+  setElementText: 0,
+  createText: 0,
+  setText: 0,
+  createComment: 0,
+  insert: 0,
+};
+const renderQueue = [];
+
+const stat = () => {
+  let counts = 0;
+  const item = Object.entries(domOperation).filter(([, value]) => value);
+  const detail = JSON.stringify(item);
+
+  renderQueue.push(detail);
+
+  item.forEach(([key, value]) => {
+    counts += value;
+    domOperation[key] = 0;
+  });
+
+  console.log(`第${renderQueue.length}次渲染,DOM操作次数:`, counts, detail);
+};
+
 function createRenderer(params: Params) {
   const {
     createElement,
+    unmount,
     setElementText,
     createText,
     setText,
@@ -59,9 +87,9 @@ function createRenderer(params: Params) {
   } = params;
 
   function mountElement(vNode: VNode, container) {
-    const { props, type, children } = vNode;
+    const { props, type } = vNode;
 
-    const ele = createElement(type);
+    const ele = createElement(type as string);
     vNode.el = ele;
 
     if (props) {
@@ -223,14 +251,6 @@ function createRenderer(params: Params) {
     }
   }
 
-  function unmount(oldVNode: VNode) {
-    const { el } = oldVNode;
-
-    if (el) {
-      el.parentNode?.removeChild(el);
-    }
-  }
-
   function render(vNode: VNode, container: HTMLElement & { _node?: VNode }) {
     if (vNode) {
       patch(container._node, vNode, container);
@@ -239,6 +259,8 @@ function createRenderer(params: Params) {
     }
 
     container._node = vNode;
+
+    stat();
   }
 
   return {
@@ -248,21 +270,34 @@ function createRenderer(params: Params) {
 
 export const { render } = createRenderer({
   createElement(type) {
+    domOperation.createElement += 1;
     return document.createElement(type);
   },
+  unmount(oldVNode: VNode) {
+    const { el } = oldVNode;
+    domOperation.unmount += 1;
+    if (el) {
+      el.parentNode?.removeChild(el);
+    }
+  },
   setElementText(el, text) {
+    domOperation.setElementText += 1;
     el.textContent = text;
   },
   createText(text) {
+    domOperation.createText += 1;
     return document.createTextNode(text);
   },
   setText(el, text) {
+    domOperation.setText += 1;
     el.nodeValue = text;
   },
   createComment(text) {
+    domOperation.createComment += 1;
     return document.createComment(text);
   },
   insert(el, parent, anchor) {
+    domOperation.insert += 1;
     parent.insertBefore(el, anchor);
   },
   shouldSetAsProps(el, key) {

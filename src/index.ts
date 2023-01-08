@@ -7,9 +7,22 @@ render(
   {
     type: Fragment,
     children: [
-      { type: "h1", children: "h1", props: {} },
-      { type: "h2", children: "h2", props: {} },
-      { type: "h2", children: "h2", props: {} },
+      { type: "p", children: "1" },
+      { type: "p", children: "2" },
+      { type: "p", children: "3" },
+    ],
+    props: {},
+  },
+  app
+);
+
+render(
+  {
+    type: Fragment,
+    children: [
+      { type: "p", children: "a" },
+      { type: "p", children: "b" },
+      { type: "p", children: "c" },
     ],
     props: {},
   },
