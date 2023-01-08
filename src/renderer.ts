@@ -18,6 +18,7 @@ interface VNode {
   children: string | VNode[];
   props?: Record<string, unknown>;
   el?: ELHtml | ELText | ELComment;
+  key?: string;
 }
 
 type ShouldSetAsProps = (ele: HTMLElement, key: string) => boolean;
@@ -143,7 +144,10 @@ function createRenderer(params: Params) {
             unmount(child);
           });
         } else {
-          setElementText(container, newChildren as string);
+          console.log(oldChildren, newChildren);
+
+          oldChildren !== newChildren &&
+            setElementText(container, newChildren as string);
         }
         break;
       case ChildrenType.array:
@@ -155,17 +159,16 @@ function createRenderer(params: Params) {
         if (!isArray) {
           setElementText(container, "");
         } else {
-          for (let i = 0; i < minLen; i++) {
-            patch(oldChildren[i] as VNode, newChildren[i] as VNode, container);
-          }
+          for (let i = 0; i < newLen; i++) {
+            const newChild = newChildren[i] as VNode;
 
-          if (newLen > oldLen) {
-            for (let i = minLen; i < newLen; i++) {
-              patch(null, newChildren[i] as VNode, container);
-            }
-          } else if (newLen < oldLen) {
-            for (let i = minLen; i < oldLen; i++) {
-              unmount(oldChildren[i] as VNode);
+            for (let j = 0; j < oldLen; j++) {
+              const oldChild = oldChildren[j] as VNode;
+
+              if (oldChild.key === newChild.key) {
+                patch(oldChild, newChild, container);
+                break;
+              }
             }
           }
         }
