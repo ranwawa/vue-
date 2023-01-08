@@ -10,6 +10,7 @@ render(
       { type: "p", children: "1" },
       { type: "p", children: "2" },
       { type: "p", children: "3" },
+      { type: "p", children: "4" },
     ],
     props: {},
   },
