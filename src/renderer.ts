@@ -132,8 +132,8 @@ function createRenderer(params: Params) {
       return ChildrenType.unknown;
     };
 
-    const newChildren = newNode.children;
-    const oldChildren = oldNode.children;
+    let newChildren = newNode.children;
+    let oldChildren = oldNode.children;
     const newChildrenType = getChildrenType(newChildren);
     const oldChildrenType = getChildrenType(oldChildren);
 
@@ -159,11 +159,14 @@ function createRenderer(params: Params) {
         if (!isArray) {
           setElementText(container, "");
         } else {
+          newChildren = newChildren as VNode[];
+          oldChildren = oldChildren as VNode[];
+
           for (let i = 0; i < newLen; i++) {
-            const newChild = newChildren[i] as VNode;
+            const newChild = newChildren[i];
 
             for (let j = 0; j < oldLen; j++) {
-              const oldChild = oldChildren[j] as VNode;
+              const oldChild = oldChildren[j];
 
               if (oldChild.key === newChild.key) {
                 patch(oldChild, newChild, container);
