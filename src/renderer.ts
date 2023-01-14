@@ -194,6 +194,17 @@ function createRenderer(params: Params) {
               patch(null, newChild, container, anchor);
             }
           }
+
+          for (let i = 0; i < oldLen; i++) {
+            const oldChild = oldChildren[i];
+            const isInNewTree = newChildren.find(
+              (ele) => ele.key === oldChild.key
+            );
+
+            if (!isInNewTree) {
+              unmount(oldChild);
+            }
+          }
         }
 
         break;
