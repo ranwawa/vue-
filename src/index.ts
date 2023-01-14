@@ -22,8 +22,6 @@ render(
     children: [
       { type: "p", children: "1", key: "p-3" },
       { type: "p", children: "2", key: "p-1" },
-      { type: "p", children: "2.1", key: "p-4" },
-      { type: "p", children: "3", key: "p-2" },
     ],
     props: {},
   },
