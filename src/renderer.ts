@@ -163,18 +163,20 @@ function createRenderer(params: Params) {
 
           for (let i = 0; i < newLen; i++) {
             const newChild = newChildren[i];
+            const preNewChild = newChildren[i - 1];
 
+            let hasInOldTree = false;
             for (let j = 0; j < oldLen; j++) {
               const oldChild = oldChildren[j];
 
               if (oldChild.key === newChild.key) {
+                hasInOldTree = true;
+
                 patch(oldChild, newChild, container);
 
                 if (j >= lastIndex) {
                   lastIndex = j;
                 } else {
-                  const preNewChild = newChildren[i - 1];
-
                   if (preNewChild) {
                     insert(newChild.el, container, preNewChild.el.nextSibling);
                   }
@@ -182,6 +184,14 @@ function createRenderer(params: Params) {
 
                 break;
               }
+            }
+
+            if (!hasInOldTree) {
+              const anchor = preNewChild
+                ? preNewChild.el.nextSibling
+                : container.firstChild;
+
+              patch(null, newChild, container, anchor);
             }
           }
         }
@@ -226,7 +236,12 @@ function createRenderer(params: Params) {
     patchChildren(oldNode, newNode, ele);
   }
 
-  function patch(oldNode: VNode, newNode: VNode, container: HTMLElement) {
+  function patch(
+    oldNode: VNode,
+    newNode: VNode,
+    container: HTMLElement,
+    anchor?: ChildNode
+  ) {
     const newType = newNode.type;
 
     if (oldNode && oldNode.type !== newType) {
@@ -245,7 +260,7 @@ function createRenderer(params: Params) {
           } else {
             const el = createText(newChildren as string);
             newNode.el = el;
-            insert(el, container);
+            insert(el, container, anchor);
           }
         } else if (newType === Comment) {
           if (oldNode) {
@@ -254,12 +269,12 @@ function createRenderer(params: Params) {
           } else {
             const el = createComment(newChildren as string);
             newNode.el = el;
-            insert(el, container);
+            insert(el, container, anchor);
           }
         } else if (newType === Fragment) {
           if (!oldNode) {
             (newChildren as VNode[]).forEach((child) => {
-              patch(null, child, container);
+              patch(null, child, container, anchor);
             });
           } else {
             patchChildren(oldNode, newNode, container);
