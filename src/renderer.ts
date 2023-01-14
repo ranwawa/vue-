@@ -33,7 +33,7 @@ interface Params {
   insert: (
     ele: VNode["el"],
     container: HTMLElement,
-    anchor?: HTMLElement
+    anchor?: ChildNode
   ) => void;
   patchProps: (
     ele: HTMLElement,
@@ -144,8 +144,6 @@ function createRenderer(params: Params) {
             unmount(child);
           });
         } else {
-          console.log(oldChildren, newChildren);
-
           oldChildren !== newChildren &&
             setElementText(container, newChildren as string);
         }
@@ -161,6 +159,7 @@ function createRenderer(params: Params) {
         } else {
           newChildren = newChildren as VNode[];
           oldChildren = oldChildren as VNode[];
+          let lastIndex = 0;
 
           for (let i = 0; i < newLen; i++) {
             const newChild = newChildren[i];
@@ -170,6 +169,17 @@ function createRenderer(params: Params) {
 
               if (oldChild.key === newChild.key) {
                 patch(oldChild, newChild, container);
+
+                if (j >= lastIndex) {
+                  lastIndex = j;
+                } else {
+                  const preNewChild = newChildren[i - 1];
+
+                  if (preNewChild) {
+                    insert(newChild.el, container, preNewChild.el.nextSibling);
+                  }
+                }
+
                 break;
               }
             }
